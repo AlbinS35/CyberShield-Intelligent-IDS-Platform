@@ -1,62 +1,22 @@
-# ─── Python & Virtual Environments ───────────────────────────────────────────
+# Development Environments
 .venv/
 venv/
 ENV/
-env/
 *.env
-.env.*
-!.env.example
 
-# Python Compilation
+# Python Compilation and Framework Data
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# Django
 db.sqlite3
-*.log
-media/
-staticfiles/
-local_settings.py
-
-# ML Model Binaries (tracked separately via Git LFS if needed)
 *.pkl
 *.joblib
-*.h5
-*.onnx
 
-# Dataset files (too large for repo)
-*.csv
-*.parquet
-*.json.gz
-
-# ─── Node / React / Vite ──────────────────────────────────────────────────────
+# Node Build Outputs
 frontend/node_modules/
 frontend/dist/
-frontend/.vite/
-frontend/coverage/
 .eslintcache
-*.tsbuildinfo
 
-# ─── IDE & Editor ─────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Media & Documentation Exclusions
+*.csv
 .DS_Store
-Thumbs.db
-
-# ─── Docker ───────────────────────────────────────────────────────────────────
-docker-compose.override.yml
-
-# ─── Documentation Build Outputs ─────────────────────────────────────────────
-documentation/screenshots/*.png
-documentation/screenshots/*.jpg
+.vscode/
