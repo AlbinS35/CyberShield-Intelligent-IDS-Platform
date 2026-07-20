@@ -1,58 +1,196 @@
 # CyberShield: Intelligent Intrusion Detection, Prevention, and Digital Forensics Platform
 
+<div align="center">
+
+![CyberShield Banner](documentation/screenshots/banner.png)
+
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Django](https://img.shields.io/badge/Django-4.2-092E20?style=for-the-badge&logo=django&logoColor=white)](https://djangoproject.com)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
+**A unified, enterprise-grade security ecosystem for real-time threat detection, automated incident containment, and legally resilient digital forensics.**
+
+[Architecture](#architecture) · [Quick Start](#quick-start) · [Features](#features) · [API Docs](#api-documentation) · [ML Pipeline](#ml-pipeline)
+
+</div>
+
+---
+
 ## 📌 Project Overview
-CyberShield is a unified, enterprise-grade security ecosystem designed to bridge the structural gaps between real-time threat detection, automated incident containment, and legally resilient digital forensics[cite: 1]. Traditional security frameworks often alert administrators without taking protective action or decouple post-incident forensic analysis from live infrastructure[cite: 1]. CyberShield unifies these pipelines into a centralized web architecture utilizing a dual-phase implementation strategy[cite: 1].
 
-This project is developed as part of the **Research Project/Software Project Part 1 (24MCAR295)** for the Master of Computer Applications (MCA) curriculum at **Amal Jyothi College of Engineering (Autonomous), Kanjirappally**[cite: 2].
+CyberShield is a unified, enterprise-grade security ecosystem designed to bridge the structural gaps between real-time threat detection, automated incident containment, and legally resilient digital forensics. Traditional security frameworks often alert administrators without taking protective action or decouple post-incident forensic analysis from live infrastructure. CyberShield unifies these pipelines into a centralized web architecture utilizing a dual-phase implementation strategy.
 
----
-
-## 🛡️ Real-Time Prevention & Containment Methods
-Unlike passive alerting tools, CyberShield actively mitigates damage via an **Intelligent Threat Prevention Engine**[cite: 1]:
-* **Automated IP Blocking:** Dynamically interacts with system firewalls to instantly drop incoming packets from flagged malicious sources[cite: 1].
-* **Device Isolation:** Rapidly disconnects and isolates compromised network assets to halt lateral movement across internal servers[cite: 1].
-* **Configurable Playbooks:** Automatically fires severity-based execution playbooks the exact millisecond the AI flags a high-confidence threat[cite: 1].
-* **Audit Trail Logging:** Automatically logs every automated response action taken for immediate forensic accountability[cite: 1].
+This project is developed as part of the **Research Project/Software Project Part 1 (24MCAR295)** for the Master of Computer Applications (MCA) curriculum at **Amal Jyothi College of Engineering (Autonomous), Kanjirappally**.
 
 ---
 
-## 👥 Target Users & Role-Based Dashboards
-The platform provides custom multi-tenant workspaces separated via Role-Based Access Control (RBAC)[cite: 1]:
-* **Security Analyst Workspace:** Live network packet tracking, threshold alert handling, and case referral pipelines[cite: 1].
-* **Digital Forensic Investigator Workspace:** Chronological attack timeline reconstruction, secure evidence uploads, and SHA-256 cryptographic verification tracking[cite: 1].
-* **System Administrator Workspace:** Hardware/software asset registration, system health metrics, and baseline alert rule configurations[cite: 1].
-* **Organization Management Workspace:** Multi-department security metrics, audit trails, compliance logging overview, and automated high-level reporting[cite: 1].
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   REACT FRONTEND (Vite)                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
+│  │ Analyst  │ │Forensics │ │  Admin   │ │  Org Mgmt  │  │
+│  │Dashboard │ │  Panel   │ │  Panel   │ │  Dashboard │  │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────┬─────┘  │
+│       └────────────┴────────────┴───────────────┘        │
+│                      Axios + WebSocket                    │
+└──────────────────────────────┬──────────────────────────┘
+                               │ HTTPS / WSS
+┌──────────────────────────────▼──────────────────────────┐
+│              DJANGO REST FRAMEWORK BACKEND               │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │  Auth/RBAC   │  │  Threat API  │  │  Forensics API│  │
+│  │  (JWT+Roles) │  │  (Incidents) │  │  (Cases+SHA)  │  │
+│  └──────────────┘  └──────────────┘  └───────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │  Wazuh Sync  │  │  ML Engine   │  │ Playbook Exec │  │
+│  │  (Celery)    │  │  (RF Model)  │  │  (iptables)   │  │
+│  └──────────────┘  └──────────────┘  └───────────────┘  │
+└──────┬───────────────────────┬───────────────────────────┘
+       │                       │
+┌──────▼──────┐        ┌───────▼──────┐       ┌───────────┐
+│ PostgreSQL  │        │    Redis     │       │  Wazuh    │
+│ (JSONB logs)│        │(Channels+MQ) │       │  Manager  │
+└─────────────┘        └──────────────┘       └───────────┘
+```
 
 ---
 
-## ⚙️ Technical Framework & Production Stack
-* **Frontend UI:** React.js (Vite architecture)[cite: 1]
-* **Styling Framework:** Tailwind CSS
-* **Backend API Engine:** Python (Django & Django REST Framework)[cite: 1]
-* **Database Infrastructure:** PostgreSQL (Optimized for JSONB log storage and high-throughput scaling)[cite: 1]
-* **Data Integrity & Security:** SHA-256 Cryptographic Hashing engines for immutable log sealing[cite: 1]
-* **AI/ML Core:** Scikit-learn (Random Forest classification models trained on NSL-KDD and CICIDS2017 baseline datasets)[cite: 1]
-* **Development Utilities:** Git/GitHub, Postman API Frameworks[cite: 1]
+## 🛡️ Features
+
+### Real-Time Detection
+- Live network event ingestion and normalization via Wazuh API bridge
+- JSONB-optimized PostgreSQL log storage with SHA-256 tamper seals on every record
+- WebSocket-powered live alert dashboard (Django Channels + Redis)
+
+### AI/ML Classification
+- Random Forest classifier trained on NSL-KDD dataset (41 features, >90% target precision)
+- Auto-classification pipeline triggered on every new NetworkEvent via Django signals
+- Confidence scoring and multiclass attack type identification
+
+### Automated Prevention
+- Severity-based playbook execution engine (IP blocking, device isolation)
+- Full execution audit trail with stdout/stderr capture
+- Configurable playbook rules per tenant and severity level
+
+### Digital Forensics
+- SHA-256 cryptographic evidence integrity verification
+- Chronological attack timeline reconstruction across correlated log events
+- Chain-of-custody tracking per forensic case
+
+### Multi-Tenant RBAC
+| Role | Access |
+|------|--------|
+| Security Analyst | Live alerts, incident management, threat dashboard |
+| Forensic Investigator | Case management, evidence vault, timeline |
+| System Administrator | Asset registry, system health, alert rule config |
+| Org Manager | Security metrics, compliance reports, audit trail |
 
 ---
 
-## 📅 Implementation Roadmap (Scrum Architecture)
+## 🚀 Quick Start
 
-### 🔹 Phase 1: Platform Core & Web Infrastructure[cite: 1]
-* Database normalization, PostgreSQL schema mappings, and migration setup[cite: 1, 2].
-* Multi-tenant authentication infrastructure using Django's native RBAC framework[cite: 1].
-* Basic log ingestion pipelines and manually triggered incident response tracking[cite: 1].
-* SHA-256 cryptographic hashing library integrations for secure case archival[cite: 1].
+### Prerequisites
+- Python 3.11+, Node.js 20+, PostgreSQL 15+, Redis 7+
 
-### 🔹 Phase 2: Intelligence Layer & Automated Containment[cite: 1]
-* Supervised machine learning model preparation (Random Forest) for anomalous network packet classification (>90% target precision accuracy)[cite: 1].
-* Automated containment engine playbooks (device-level isolation & real-time IP blacklisting)[cite: 1].
-* Predictive risk scoring pipelines evaluating historic node vulnerabilities[cite: 1].
-* Dynamic cross-log chronological incident timeline layout generator[cite: 1].
+### Backend Setup
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # Linux/macOS
+pip install -r requirements.txt
+cp ../.env.example .env         # Configure your environment
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### ML Model Training
+```bash
+cd ml_pipeline
+pip install -r requirements.txt
+python train.py --dataset data/NSL-KDD-Train.csv
+```
 
 ---
 
-## 👨‍🏫 Project Guidance & Collaboration
-* **Developer:** Albin Suresh (Roll No: 8)
-* **Project Guide / Scrum Master:** Jinson Devis (`jinsondevis@amaljyothi.ac.in`)[cite: 2]
-* **Institution:** Department of Computer Applications, Amal Jyothi College of Engineering, Kanjirappally, Kottayam, Kerala[cite: 2].
+## 📁 Project Structure
+
+```
+CyberShield-Intelligent-IDS-Platform/
+├── backend/                    ← Django REST API
+│   ├── cybershield_core/       ← Django project settings
+│   ├── authentication/         ← Custom User, Tenant, RBAC
+│   ├── ingestion/              ← Network events, Wazuh bridge
+│   ├── detection/              ← ML inference, alert management
+│   ├── forensics/              ← Cases, evidence, timeline
+│   └── manage.py
+├── frontend/                   ← React + Vite + Tailwind
+│   └── src/
+│       ├── pages/              ← Role-based dashboard pages
+│       ├── components/         ← Reusable UI components
+│       ├── context/            ← Auth, Theme, Socket contexts
+│       └── utils/              ← Helpers, crypto, formatters
+├── ml_pipeline/                ← Standalone ML training scripts
+├── documentation/              ← System study, screenshots
+├── docker-compose.yml
+└── .env.example
+```
+
+---
+
+## 📡 API Documentation
+
+Auto-generated OpenAPI specification available at:
+- **Swagger UI**: `http://localhost:8000/api/docs/`
+- **ReDoc**: `http://localhost:8000/api/redoc/`
+- **Schema JSON**: `http://localhost:8000/api/schema/`
+
+---
+
+## 🤖 ML Pipeline
+
+The Random Forest classifier is trained on the NSL-KDD dataset:
+
+```bash
+# Train the model
+python ml_pipeline/train.py
+
+# Evaluate model performance
+python ml_pipeline/evaluate.py
+
+# Output: backend/detection/core_ml/model_bin/rf_model.pkl
+```
+
+**Target Performance Metrics:**
+- Accuracy: >95% on NSL-KDD test split
+- Precision: >90% (DoS, Probe, R2L, U2R class separation)
+- Inference latency: <50ms per prediction
+
+---
+
+## 👥 Team
+
+| Role | Name | Contact |
+|------|------|---------|
+| Developer | Albin Suresh (Roll No: 8) | — |
+| Project Guide / Scrum Master | Jinson Devis | jinsondevis@amaljyothi.ac.in |
+| Institution | Dept. of Computer Applications, Amal Jyothi College of Engineering | Kanjirappally, Kerala |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
