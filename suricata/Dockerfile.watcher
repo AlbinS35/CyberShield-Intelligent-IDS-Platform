@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+LABEL description="CyberShield Suricata EVE Watcher"
+
+WORKDIR /watcher
+
+# Only dependency: requests for HTTP POST to the API
+RUN pip install --no-cache-dir requests==2.31.*
+
+COPY watcher.py .
+
+CMD ["python", "-u", "watcher.py"]

@@ -52,6 +52,46 @@ class WazuhSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
         return WazuhSyncLog.objects.filter(tenant=self.request.user.tenant)
 
 
+class SuricataIngestView(generics.GenericAPIView):
+    """
+    POST /api/ingestion/suricata/
+    Accepts a batch of Suricata EVE JSON events from the suricata-watcher container.
+
+    Request body:
+        {
+            "tenant_id": "<uuid>",
+            "events": [{...eve_json_event...}, ...]
+        }
+
+    Each event is queued as an async Celery task for processing,
+    so this endpoint returns quickly even for large batches.
+    Authentication: Bearer JWT (service account configured via SURICATA_API_TOKEN).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from .tasks import ingest_suricata_event
+
+        events    = request.data.get("events", [])
+        tenant_id = request.data.get("tenant_id", str(request.user.tenant_id))
+
+        if not events:
+            return Response({"error": "'events' list is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(events, list):
+            return Response({"error": "'events' must be a list."}, status=status.HTTP_400_BAD_REQUEST)
+
+        queued = 0
+        for event in events[:500]:  # cap at 500 per call
+            ingest_suricata_event.delay(tenant_id, event)
+            queued += 1
+
+        return Response(
+            {"queued": queued, "message": f"{queued} Suricata events queued for ingestion."},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
 class WazuhSyncTriggerView(generics.GenericAPIView):
     """POST /api/ingestion/wazuh/sync/ → manually trigger Wazuh alert ingestion."""
     permission_classes = [permissions.IsAuthenticated, IsSysAdmin]

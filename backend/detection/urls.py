@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AlertViewSet, IncidentViewSet, PlaybookViewSet,
     PlaybookExecutionViewSet, IPBlocklistViewSet, MLModelStatsView,
+    ComplianceReportViewSet,
 )
 
 router = DefaultRouter()
@@ -15,6 +16,7 @@ router.register("incidents", IncidentViewSet, basename="incidents")
 router.register("playbooks", PlaybookViewSet, basename="playbooks")
 router.register("executions", PlaybookExecutionViewSet, basename="executions")
 router.register("blocklist", IPBlocklistViewSet, basename="blocklist")
+router.register("compliance-reports", ComplianceReportViewSet, basename="compliance-reports")
 
 urlpatterns = [
     path("", include(router.urls)),

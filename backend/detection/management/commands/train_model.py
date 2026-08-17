@@ -46,7 +46,7 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(self.style.SUCCESS(
-            f"\n✅ Training Complete!\n"
+            f"\n[OK] Training Complete!\n"
             f"   Accuracy:       {result['accuracy']:.4f} ({result['accuracy']*100:.2f}%)\n"
             f"   Training time:  {result['training_time_s']}s\n"
             f"   Train samples:  {result['n_samples_train']}\n"
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         ))
 
         # Print per-class metrics
-        self.stdout.write("\n📊 Classification Report:")
+        self.stdout.write("\n[REPORT] Classification Report:")
         for class_name, metrics in result["classification_report"].items():
             if isinstance(metrics, dict):
                 self.stdout.write(

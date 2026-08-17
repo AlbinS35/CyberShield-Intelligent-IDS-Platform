@@ -24,10 +24,9 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      '/ws': {
-        target: 'ws://localhost:8000',
-        ws: true,
-      },
+      // '/ws' WebSocket proxy disabled — Django runserver does not support WebSockets.
+      // To enable live alerts, run Django with Daphne/Channels and re-enable this block:
+      // '/ws': { target: 'ws://localhost:8000', ws: true },
     },
   },
 })

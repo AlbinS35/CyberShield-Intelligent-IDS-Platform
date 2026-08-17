@@ -1,0 +1,160 @@
+%YAML 1.1
+---
+##############################################################################
+# CyberShield Suricata Configuration
+# Minimal production-ready config for NIDS integration.
+# Full reference: https://suricata.readthedocs.io/en/latest/configuration/
+#
+# IMPORTANT: This runs in AF_PACKET mode on Linux only.
+#            For Windows/macOS dev, use simulate_traffic.py instead.
+##############################################################################
+
+# ── Network Variables ─────────────────────────────────────────────────────────
+vars:
+  address-groups:
+    HOME_NET:    "[192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS:  "$HOME_NET"
+    DNS_SERVERS:  "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS:  "$EXTERNAL_NET"
+    DC_SERVERS:   "$HOME_NET"
+    DNP3_SERVER:  "$HOME_NET"
+    DNP3_CLIENT:  "$HOME_NET"
+    MODBUS_CLIENT: "$HOME_NET"
+    MODBUS_SERVER: "$HOME_NET"
+    ENIP_CLIENT:  "$HOME_NET"
+    ENIP_SERVER:  "$HOME_NET"
+
+  port-groups:
+    HTTP_PORTS:    "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS:  1521
+    SSH_PORTS:     22
+    DNP3_PORTS:    20000
+    MODBUS_PORTS:  502
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+    FTP_PORTS:     21
+    VXLAN_PORTS:   4789
+    TEREDO_PORTS:  3544
+
+# ── AF_PACKET Capture ─────────────────────────────────────────────────────────
+# Change 'docker0' to 'eth0' or your actual interface if needed.
+af-packet:
+  - interface: docker0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+# ── EVE JSON Output (primary output for CyberShield integration) ──────────────
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: /var/log/suricata/eve.json
+      # Only log alert events to keep volume manageable.
+      # Change to [alert, flow, http, dns] for full NSM visibility.
+      types:
+        - alert:
+            payload: no         # set yes for deep forensics (storage intensive)
+            packet: no
+            metadata: yes
+            tagged-packets: yes
+        - flow
+        - stats:
+            totals: yes
+            threads: no
+
+  # Fast log for quick human-readable alert view (optional)
+  - fast:
+      enabled: yes
+      filename: /var/log/suricata/fast.log
+      append: yes
+
+  # Suppress raw pcap logging by default (storage overhead)
+  - pcap-log:
+      enabled: no
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        level: info
+        filename: /var/log/suricata/suricata.log
+
+# ── Rules ─────────────────────────────────────────────────────────────────────
+# suricata-update (run at container start) downloads Emerging Threats rules.
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - suricata.rules
+
+# ── Detection Engine ─────────────────────────────────────────────────────────
+detect:
+  profile: medium
+  custom-values:
+    toclient-groups: 3
+    toserver-groups: 25
+  sgh-mpm-context: auto
+  inspection-recursion-limit: 3000
+
+# ── App Layer Protocols ───────────────────────────────────────────────────────
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+    http:
+      enabled: yes
+      libhtp:
+        default-config:
+          personality: IDS
+          request-body-limit: 100kb
+          response-body-limit: 100kb
+    dns:
+      tcp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+      udp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+    ftp:
+      enabled: yes
+    smtp:
+      enabled: yes
+    ssh:
+      enabled: yes
+
+# ── Flow and Stream ───────────────────────────────────────────────────────────
+flow:
+  memcap: 128mb
+  hash-size: 65536
+  prealloc: 10000
+  emergency-recovery: 30
+
+stream:
+  memcap: 64mb
+  checksum-validation: yes
+  inline: no     # set yes for IPS inline mode (requires NFQUEUE)
+  reassembly:
+    memcap: 256mb
+    depth: 1mb
+    toserver-chunk-size: 2560
+    toclient-chunk-size: 2560
+    randomize-chunk-size: yes
+
+# ── Host table ────────────────────────────────────────────────────────────────
+host:
+  hash-size: 4096
+  prealloc: 1000
+  memcap: 32mb

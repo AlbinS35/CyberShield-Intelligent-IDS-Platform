@@ -1,10 +1,10 @@
 """
 Detection Serializers
-Alert, Incident, Playbook, and IPBlocklist serializers.
+Alert, Incident, Playbook, IPBlocklist, SHAP Explanation serializers.
 """
 
 from rest_framework import serializers
-from .models import Alert, Incident, Playbook, PlaybookExecution, IPBlocklist, MLInferenceLog
+from .models import Alert, Incident, Playbook, PlaybookExecution, IPBlocklist, MLInferenceLog, ComplianceReport
 from authentication.serializers import UserProfileSerializer
 
 
@@ -84,6 +84,45 @@ class MLInferenceLogSerializer(serializers.ModelSerializer):
         model = MLInferenceLog
         fields = [
             "id", "prediction", "confidence", "model_version",
-            "inference_time_ms", "inferred_at",
+            "dataset_source", "inference_time_ms", "inferred_at",
         ]
         read_only_fields = fields
+
+
+class SHAPFeatureSerializer(serializers.Serializer):
+    """Single SHAP feature contribution entry."""
+    feature   = serializers.CharField()
+    value     = serializers.FloatField()
+    shap_value = serializers.FloatField()
+    direction = serializers.ChoiceField(choices=["increases_risk", "decreases_risk"])
+
+
+class SHAPExplanationSerializer(serializers.Serializer):
+    """
+    Response schema for GET /api/detection/alerts/{id}/explain/
+    Returns the SHAP-ranked feature contributions for an Alert's ML inference.
+    """
+    alert_id       = serializers.UUIDField()
+    prediction     = serializers.CharField()
+    confidence     = serializers.FloatField()
+    dataset_source = serializers.CharField()
+    model_version  = serializers.CharField()
+    playbook_gated = serializers.BooleanField()
+    explanation    = SHAPFeatureSerializer(many=True)
+    explanation_note = serializers.CharField()
+
+
+class ComplianceReportSerializer(serializers.ModelSerializer):
+    generated_by_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ComplianceReport
+        fields = [
+            "id", "title", "report_type", "status", "generated_by",
+            "generated_by_name", "created_at", "metrics", "findings", "auditor_notes"
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def get_generated_by_name(self, obj):
+        return obj.generated_by.get_full_name() if obj.generated_by else "System"
+

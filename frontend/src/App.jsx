@@ -5,10 +5,14 @@ import ProtectedRoute from './components/layout/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 
 // Auth Pages
-import LoginPage from './pages/auth/LoginPage'
+import LoginPage          from './pages/auth/LoginPage'
+import SignupPage         from './pages/auth/SignupPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import LandingPage        from './pages/LandingPage'
 
 // Role-specific Dashboard Pages
 import AnalystDashboard    from './pages/Analyst/AnalystDashboard'
+import AlertFeed           from './pages/Analyst/AlertFeed'
 import AlertDetail         from './pages/Analyst/AlertDetail'
 import NetworkEvents       from './pages/Analyst/NetworkEvents'
 import IncidentManager     from './pages/Analyst/IncidentManager'
@@ -38,19 +42,23 @@ export default function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/"         element={<LandingPage />} />
+            <Route path="/login"    element={<LoginPage />} />
+            <Route path="/signup"           element={<SignupPage />} />
+            <Route path="/register"         element={<SignupPage />} />
+            <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
 
             {/* Protected Analyst Routes */}
             <Route element={<ProtectedRoute roles={[ROLES.ANALYST, ROLES.SUPER_ADMIN]} />}>
               <Route element={<DashboardLayout />}>
-                <Route path="/analyst"               element={<AnalystDashboard />} />
-                <Route path="/analyst/alerts/:id"    element={<AlertDetail />} />
-                <Route path="/analyst/network-events" element={<NetworkEvents />} />
-                <Route path="/analyst/incidents"     element={<IncidentManager />} />
+                <Route path="/analyst"                   element={<AnalystDashboard />} />
+                <Route path="/analyst/alerts"            element={<AlertFeed />} />
+                <Route path="/analyst/alerts/:id"        element={<AlertDetail />} />
+                <Route path="/analyst/network-events"    element={<NetworkEvents />} />
+                <Route path="/analyst/incidents"         element={<IncidentManager />} />
               </Route>
             </Route>
 

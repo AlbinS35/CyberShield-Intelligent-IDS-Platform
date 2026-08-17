@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authAPI } from '../api/auth'
-import { getTokenPayload, clearTokens, setTokens, getAccessToken } from '../utils/tokenUtils'
+import { authAPI } from '../api'
 
 const AuthContext = createContext(null)
 
@@ -8,37 +7,49 @@ export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Initialize from stored JWT on mount
+  // Initialize from session cookie by fetching user profile on mount
   useEffect(() => {
-    const token = getAccessToken()
-    if (token) {
-      const payload = getTokenPayload(token)
-      if (payload && payload.exp * 1000 > Date.now()) {
+    const initAuth = async () => {
+      try {
+        const { data } = await authAPI.me()
         setUser({
-          id:          payload.user_id,
-          role:        payload.role,
-          tenantId:    payload.tenant_id,
-          tenantName:  payload.tenant_name,
-          fullName:    payload.full_name,
+          id:          data.id,
+          role:        data.role,
+          tenantId:    data.tenant?.id,
+          tenantName:  data.tenant?.name,
+          fullName:    data.full_name,
         })
-      } else {
-        clearTokens()
+      } catch (err) {
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
     }
-    setLoading(false)
+    initAuth()
   }, [])
 
   const login = useCallback(async (email, password) => {
     const { data } = await authAPI.login(email, password)
-    setTokens(data.access, data.refresh)
-    const payload = getTokenPayload(data.access)
     const userData = {
-      id:         payload.user_id,
-      role:       payload.role,
-      tenantId:   payload.tenant_id,
-      tenantName: payload.tenant_name,
-      fullName:   payload.full_name,
-      ...data.user,
+      id:         data.user.id,
+      role:       data.user.role,
+      tenantId:   data.user.tenant?.id,
+      tenantName: data.user.tenant?.name,
+      fullName:   data.user.full_name,
+    }
+    setUser(userData)
+    return userData
+  }, [])
+
+  // Google OAuth login — sends Google credential to backend
+  const loginWithGoogle = useCallback(async (googleCredential) => {
+    const { data } = await authAPI.googleLogin(googleCredential)
+    const userData = {
+      id:         data.user.id,
+      role:       data.user.role,
+      tenantId:   data.user.tenant?.id,
+      tenantName: data.user.tenant?.name,
+      fullName:   data.user.full_name,
     }
     setUser(userData)
     return userData
@@ -46,12 +57,11 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try { await authAPI.logout() } catch (_) {}
-    clearTokens()
     setUser(null)
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   )

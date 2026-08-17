@@ -44,6 +44,41 @@ class AuditLogMiddleware(MiddlewareMixin):
                 "ip": self._get_client_ip(request),
             })
         )
+
+        # Track failed logins per client IP using Django cache backend
+        if request.path == "/api/auth/login/" and request.method == "POST":
+            from django.core.cache import cache
+            ip = self._get_client_ip(request)
+            cache_key = f"failed_login_attempts_{ip}"
+            
+            if response.status_code == 401:
+                attempts = cache.get(cache_key, 0) + 1
+                cache.set(cache_key, attempts, timeout=300) # 5-minute sliding window
+                
+                if attempts >= 5:
+                    logger.critical(
+                        json.dumps({
+                            "event": "BRUTE_FORCE_DETECTED",
+                            "timestamp": timezone.now().isoformat(),
+                            "ip": ip,
+                            "attempts": attempts,
+                            "action": "IP_BLOCKED_AUTO",
+                        })
+                    )
+                    from detection.models import IPBlocklist, Tenant
+                    tenant = Tenant.objects.first()
+                    if tenant:
+                        IPBlocklist.objects.get_or_create(
+                            ip_address=ip,
+                            tenant=tenant,
+                            defaults={
+                                "reason": f"Auto-contained: 5 failed login attempts in 5 minutes.",
+                                "is_active": True,
+                            }
+                        )
+            elif response.status_code == 200:
+                cache.delete(cache_key)
+
         return response
 
     @staticmethod

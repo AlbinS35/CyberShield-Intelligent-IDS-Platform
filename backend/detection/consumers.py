@@ -66,20 +66,32 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _get_authenticated_user(self):
-        """Extract and validate JWT token from query string."""
+        """Extract and validate JWT token from query string or cookies."""
         from urllib.parse import parse_qs
         from rest_framework_simplejwt.tokens import AccessToken
         from rest_framework_simplejwt.exceptions import TokenError
         from authentication.models import User
+        from django.http import SimpleCookie
 
         query_string = self.scope.get("query_string", b"").decode()
         params = parse_qs(query_string)
         token_list = params.get("token", [])
+        token_str = token_list[0] if token_list else None
 
-        if not token_list:
+        # Fallback to cookie
+        if not token_str or token_str == "null" or token_str == "undefined":
+            headers = dict(self.scope.get("headers", []))
+            cookie_header = headers.get(b"cookie", b"").decode()
+            if cookie_header:
+                cookie = SimpleCookie()
+                cookie.load(cookie_header)
+                if "access_token" in cookie:
+                    token_str = cookie["access_token"].value
+
+        if not token_str or token_str == "null" or token_str == "undefined":
             return None
         try:
-            token = AccessToken(token_list[0])
+            token = AccessToken(token_str)
             user_id = token.get("user_id")
             return User.objects.select_related("tenant").get(id=user_id, is_active=True)
         except (TokenError, User.DoesNotExist, Exception):

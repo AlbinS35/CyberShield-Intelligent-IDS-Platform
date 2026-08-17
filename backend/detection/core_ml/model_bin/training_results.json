@@ -1,0 +1,15 @@
+{
+  "cic_ids2017": {
+    "accuracy": 0.9586,
+    "precision": 0.9824,
+    "recall": 0.9586,
+    "f1_score": 0.9682,
+    "training_time_s": 281.86,
+    "n_train": 2264594,
+    "n_test": 566149,
+    "n_features": 20,
+    "model_path": "..\\backend\\detection\\core_ml\\model_bin\\cic_rf_model.pkl",
+    "scaler_path": "..\\backend\\detection\\core_ml\\model_bin\\cic_scaler.pkl",
+    "dataset": "CIC-IDS2017"
+  }
+}

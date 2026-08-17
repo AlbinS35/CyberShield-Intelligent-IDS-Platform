@@ -111,6 +111,67 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:8000
 
+  # ── Suricata NIDS Sensor ───────────────────────────────────────────────────
+  # IMPORTANT: Suricata requires Linux host networking to sniff the Docker bridge.
+  # On Windows / macOS Docker Desktop, the Docker bridge runs inside a VM so
+  # Suricata will not capture host traffic. In that case:
+  #   - Comment out this service
+  #   - Use simulate_traffic.py for local development
+  #   - Deploy Suricata on a Linux VM or CI server for realistic testing
+  #
+  # On Linux: ensure the interface in suricata/suricata.yaml matches your
+  # Docker bridge (default: docker0 or eth0).
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: cybershield_suricata
+    restart: unless-stopped
+    # host networking required for AF_PACKET to capture live Docker traffic
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - suricata_logs:/var/log/suricata
+      - suricata_rules:/var/lib/suricata/rules
+    command: >
+      sh -c "suricata-update && suricata -c /etc/suricata/suricata.yaml --af-packet"
+    profiles:
+      # Only starts when explicitly requested:
+      #   docker compose --profile nids up -d
+      # This prevents breaking Windows/macOS dev environments.
+      - nids
+
+  # ── Suricata EVE Watcher → CyberShield Ingestion Bridge ──────────────────
+  # Tails suricata/eve.json and forwards each alert line to the CyberShield
+  # ingestion API. Works on ALL platforms because it only reads from the shared
+  # suricata_logs volume (no raw packet access needed).
+  #
+  # On Windows/macOS dev: mount simulate_traffic output to suricata_logs
+  # and the watcher will process those events through the same pipeline.
+  suricata-watcher:
+    build:
+      context: ./suricata
+      dockerfile: Dockerfile.watcher
+    container_name: cybershield_suricata_watcher
+    restart: unless-stopped
+    volumes:
+      - suricata_logs:/var/log/suricata:ro
+    environment:
+      CYBERSHIELD_API_URL:    http://backend:8000
+      CYBERSHIELD_API_TOKEN:  ${SURICATA_API_TOKEN:-}      # service-account JWT
+      CYBERSHIELD_TENANT_ID:  ${DEFAULT_TENANT_ID:-}
+      EVE_LOG_PATH:           /var/log/suricata/eve.json
+    depends_on:
+      - backend
+    profiles:
+      # Starts with either 'nids' (Linux) or 'watcher' (cross-platform dev)
+      - nids
+      - watcher
+
 volumes:
   postgres_data:
   media_data:
+  suricata_logs:
+  suricata_rules:

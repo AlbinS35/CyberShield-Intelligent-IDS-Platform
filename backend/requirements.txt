@@ -1,7 +1,5 @@
-"""
-CyberShield Backend Requirements
-Django REST Framework stack with ML, Channels, and Celery support.
-"""
+# ─── CyberShield Backend Requirements ─────────────────────────────────────────
+# Django REST Framework stack with ML, Channels, and Celery support.
 
 # ─── Core Django ──────────────────────────────────────────
 django==4.2.*
@@ -29,13 +27,18 @@ psycopg2-binary==2.9.*
 
 # ─── Environment & Security ───────────────────────────────
 python-dotenv==1.0.*
+python-decouple==3.8
 cryptography==42.*
+argon2-cffi==25.1.*
 
 # ─── Machine Learning ─────────────────────────────────────
 scikit-learn==1.4.*
 numpy==1.26.*
 pandas==2.2.*
 joblib==1.3.*
+
+# ─── Explainability (SHAP for RF model) ───────────────────
+shap==0.45.*
 
 # ─── HTTP Requests (Wazuh API bridge) ────────────────────
 requests==2.31.*

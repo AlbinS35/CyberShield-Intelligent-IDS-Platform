@@ -1,18 +1,19 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  Shield, AlertTriangle, Activity, Search, FileText,
+  AlertTriangle, Activity, Search, FileText,
   Server, BookOpen, BarChart3, ClipboardList, LogOut,
-  Zap, Lock
+  Zap, Lock, Database, Shield
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import CyberShieldLogo from '../brand/CyberShieldLogo'
 
 const NAV_CONFIG = {
   ANALYST: [
-    { to: '/analyst',              icon: Activity,     label: 'Live Dashboard' },
-    { to: '/analyst/alerts',       icon: AlertTriangle, label: 'Alert Feed' },
-    { to: '/analyst/network-events', icon: Search,     label: 'Network Events' },
-    { to: '/analyst/incidents',    icon: Zap,          label: 'Incidents' },
+    { to: '/analyst',                icon: Activity,      label: 'Live Dashboard' },
+    { to: '/analyst/alerts',         icon: AlertTriangle, label: 'Alert Feed' },
+    { to: '/analyst/network-events', icon: Database,      label: 'Network Events' },
+    { to: '/analyst/incidents',      icon: Shield,        label: 'Incidents' },
   ],
   INVESTIGATOR: [
     { to: '/forensics',            icon: FileText,     label: 'Case Vault' },
@@ -59,15 +60,7 @@ export default function Sidebar() {
     <aside className="w-60 shrink-0 flex flex-col bg-navy-950 border-r border-cyber-cyan/10">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-cyber-cyan/10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/30 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-cyber-cyan" />
-          </div>
-          <div>
-            <div className="text-sm font-bold text-white tracking-wide">CyberShield</div>
-            <div className="text-[10px] text-cyber-cyan/60 font-mono uppercase tracking-widest">IDS Platform</div>
-          </div>
-        </div>
+        <CyberShieldLogo size="sm" />
       </div>
 
       {/* Navigation */}

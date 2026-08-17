@@ -24,6 +24,7 @@ class NetworkEvent(models.Model):
         MANUAL = "MANUAL", "Manual Entry"
         API_FEED = "API_FEED", "External API Feed"
         SIMULATOR = "SIMULATOR", "Test Simulator"
+        SURICATA = "SURICATA", "Suricata NIDS"
 
     class Protocol(models.TextChoices):
         TCP = "TCP", "TCP"

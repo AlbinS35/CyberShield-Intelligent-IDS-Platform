@@ -1,6 +1,12 @@
 """
 Ingestion Celery Tasks
-Periodic Wazuh alert synchronization and network event ingestion pipeline.
+Periodic Wazuh alert synchronization, Suricata event ingestion pipeline,
+and async SHA-256 hash computation (overhead mitigation).
+
+Overhead Mitigation:
+  SHA-256 hashing is deferred to the rehash_event_batch Celery task (defined
+  in detection/tasks.py) so it never blocks bulk_create in the hot ingestion
+  path. Events are created immediately with log_hash="" and hashed in batches.
 """
 
 import logging
@@ -20,17 +26,14 @@ def sync_wazuh_alerts(self, tenant_id: str):
     2. Authenticate with Wazuh Manager API
     3. Fetch new alerts (not already ingested)
     4. Normalize each alert to NetworkEvent schema
-    5. Compute SHA-256 hash on raw_data
-    6. Save NetworkEvent records in bulk
+    5. Save NetworkEvent records in bulk (log_hash="" — hashed async below)
+    6. Dispatch async SHA-256 hash batch task (overhead mitigation)
     7. Dispatch ML classification for each new event
     8. Record sync status in WazuhSyncLog
-
-    Args:
-        tenant_id: UUID string of the target tenant.
     """
     from authentication.models import Tenant
     from .models import NetworkEvent, WazuhSyncLog
-    from .utils import WazuhAPIClient, normalize_wazuh_alert, generate_log_hash
+    from .utils import WazuhAPIClient, normalize_wazuh_alert
 
     sync_log = None
     try:
@@ -72,13 +75,10 @@ def sync_wazuh_alerts(self, tenant_id: str):
                 continue
 
             normalized = normalize_wazuh_alert(alert)
-            raw_data = alert
-            log_hash = generate_log_hash(raw_data)
-
             event = NetworkEvent(
                 tenant=tenant,
-                raw_data=raw_data,
-                log_hash=log_hash,
+                raw_data=alert,
+                log_hash="",            # hashed asynchronously by rehash_event_batch
                 event_source=NetworkEvent.Source.WAZUH,
                 **{k: v for k, v in normalized.items() if k != "raw_data"},
             )
@@ -91,10 +91,17 @@ def sync_wazuh_alerts(self, tenant_id: str):
         sync_log.sync_completed_at = datetime.now(tz=timezone.utc)
         sync_log.save()
 
-        # Queue ML classification for each new event
-        for event in new_events:
+        if new_events:
+            event_ids = [str(e.id) for e in new_events]
+
+            # Dispatch async SHA-256 hashing in one batch (overhead mitigation)
+            from detection.tasks import rehash_event_batch
+            rehash_event_batch.delay(event_ids)
+
+            # Queue ML classification for each new event
             from detection.tasks import classify_network_event
-            classify_network_event.delay(str(event.id))
+            for eid in event_ids:
+                classify_network_event.delay(eid)
 
         logger.info(f"[{tenant.name}] Wazuh sync: {ingested_count} new events ingested.")
         return ingested_count
@@ -106,3 +113,92 @@ def sync_wazuh_alerts(self, tenant_id: str):
             sync_log.error_message = str(exc)
             sync_log.save()
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=15)
+def ingest_suricata_event(self, tenant_id: str, suricata_event: dict):
+    """
+    Celery task: Ingest a single Suricata EVE JSON event into CyberShield.
+
+    Called by the suricata/watcher.py tail-and-forward process whenever
+    Suricata writes a new alert to eve.json.
+
+    The watcher POSTs eve.json lines as JSON to this task via the
+    ingestion API endpoint, which queues it here for async processing.
+    """
+    from authentication.models import Tenant
+    from .models import NetworkEvent
+
+    try:
+        tenant = Tenant.objects.get(id=tenant_id, is_active=True)
+
+        # Normalise Suricata eve.json → NetworkEvent fields
+        normalized = _normalize_suricata_event(suricata_event)
+
+        event = NetworkEvent.objects.create(
+            tenant=tenant,
+            raw_data=suricata_event,
+            log_hash="",    # hashed async below
+            event_source=NetworkEvent.Source.SURICATA,
+            **normalized,
+        )
+
+        # Async SHA-256 hash (overhead mitigation)
+        from detection.tasks import rehash_event_batch, classify_network_event
+        rehash_event_batch.delay([str(event.id)])
+        classify_network_event.delay(str(event.id))
+
+        logger.debug(
+            f"[Suricata] Ingested {suricata_event.get('event_type', 'event')} "
+            f"from {normalized.get('source_ip', '?')} → {normalized.get('destination_ip', '?')}"
+        )
+        return str(event.id)
+
+    except Tenant.DoesNotExist:
+        logger.error(f"Tenant {tenant_id} not found — Suricata event dropped.")
+    except Exception as exc:
+        logger.error(f"Suricata event ingestion failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+def _normalize_suricata_event(eve: dict) -> dict:
+    """
+    Map a Suricata EVE JSON event to NetworkEvent field schema.
+
+    Suricata EVE JSON structure:
+        {
+          "timestamp": "2024-01-15T12:00:00.000000+0000",
+          "event_type": "alert",
+          "src_ip": "192.168.1.100",
+          "src_port": 54321,
+          "dest_ip": "10.0.0.1",
+          "dest_port": 80,
+          "proto": "TCP",
+          "alert": {"signature": "ET SCAN Nmap", "severity": 2, ...},
+          "flow": {"bytes_toserver": 500, "bytes_toclient": 200, ...}
+        }
+    """
+    from ingestion.models import NetworkEvent
+
+    # Protocol normalisation
+    proto_map = {
+        "TCP": NetworkEvent.Protocol.TCP,
+        "UDP": NetworkEvent.Protocol.UDP,
+        "ICMP": NetworkEvent.Protocol.ICMP,
+    }
+    proto_raw = eve.get("proto", "UNKNOWN").upper()
+    protocol = proto_map.get(proto_raw, NetworkEvent.Protocol.UNKNOWN)
+
+    flow = eve.get("flow", {})
+
+    return {
+        "source_ip":        eve.get("src_ip"),
+        "destination_ip":   eve.get("dest_ip"),
+        "source_port":      eve.get("src_port"),
+        "destination_port": eve.get("dest_port"),
+        "protocol":         protocol,
+        "bytes_sent":       flow.get("bytes_toserver"),
+        "bytes_received":   flow.get("bytes_toclient"),
+        "agent_hostname":   eve.get("host", "suricata-sensor"),
+        "wazuh_alert_id":   "",     # not a Wazuh alert
+    }

@@ -64,6 +64,12 @@ class Alert(models.Model):
     # ML confidence
     ml_confidence = models.FloatField(null=True, blank=True)
 
+    # Whether auto-playbook was held due to confidence gate
+    playbook_gated = models.BooleanField(
+        default=False,
+        help_text="True if auto-playbook was suppressed pending analyst review (confidence below threshold)",
+    )
+
     # Assignment
     assigned_to = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_alerts"
@@ -213,9 +219,43 @@ class MLInferenceLog(models.Model):
     prediction = models.CharField(max_length=100)
     confidence = models.FloatField()
     model_version = models.CharField(max_length=50, default="v1.0")
+    dataset_source = models.CharField(
+        max_length=20, default="NSL-KDD",
+        help_text="Training dataset used by the model that produced this inference",
+    )
     inference_time_ms = models.FloatField(null=True, blank=True)
+    # Populated asynchronously by the SHAP explainer task
+    shap_explanation = models.JSONField(
+        null=True, blank=True,
+        help_text="Top-N SHAP feature contributions: [{feature, value, shap_value, direction}]",
+    )
     inferred_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "cs_ml_inference_logs"
         ordering = ["-inferred_at"]
+
+
+class ComplianceReport(models.Model):
+    """
+    Governance and compliance report generated for a Tenant.
+    Stores metrics snapshots and auditor findings.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="compliance_reports")
+    title = models.CharField(max_length=255)
+    report_type = models.CharField(max_length=50)  # ISO_27001, PCI_DSS, SOC_2, RBI_BANKING
+    status = models.CharField(max_length=20, default="DRAFT")  # DRAFT, REVIEWED, APPROVED
+    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    metrics = models.JSONField(help_text="Snapshot of metrics at generation time")
+    findings = models.JSONField(help_text="Compliance mapping items state")
+    auditor_notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "cs_compliance_reports"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.report_type}] {self.title} — {self.status}"
+

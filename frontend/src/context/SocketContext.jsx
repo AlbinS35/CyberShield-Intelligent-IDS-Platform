@@ -4,6 +4,9 @@ import { getAccessToken } from '../utils/tokenUtils'
 
 const SocketContext = createContext(null)
 
+// Set to true only when Django is running with Daphne + django-channels
+const WS_ENABLED = false
+
 export function SocketProvider({ children }) {
   const { user } = useAuth()
   const wsRef    = useRef(null)
@@ -12,7 +15,8 @@ export function SocketProvider({ children }) {
   const handlersRef = useRef({})
 
   const connect = useCallback(() => {
-    if (!user || wsRef.current?.readyState === WebSocket.OPEN) return
+    // Guard: skip if WS not enabled or user not logged in or already open
+    if (!WS_ENABLED || !user || wsRef.current?.readyState === WebSocket.OPEN) return
     const token = getAccessToken()
     const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/alerts/?token=${token}`
     const ws = new WebSocket(wsUrl)
@@ -37,8 +41,8 @@ export function SocketProvider({ children }) {
     ws.onclose = () => {
       setIsConnected(false)
       clearInterval(ws._pingInterval)
-      // Auto-reconnect after 5s if user still logged in
-      setTimeout(() => { if (user) connect() }, 5000)
+      // Auto-reconnect after 5s only if WS is enabled
+      if (WS_ENABLED) setTimeout(() => { if (user) connect() }, 5000)
     }
 
     ws.onerror = (err) => console.error('[CyberShield WS] Error:', err)

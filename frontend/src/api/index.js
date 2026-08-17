@@ -1,12 +1,13 @@
 import api from './axios'
 
 export const authAPI = {
-  login:    (email, password) => api.post('/auth/login/',   { email, password }),
-  logout:   ()               => api.post('/auth/logout/',  {}),
-  refresh:  (refresh)        => api.post('/auth/refresh/', { refresh }),
-  me:       ()               => api.get('/auth/me/'),
-  tenants:  ()               => api.get('/auth/tenants/'),
-  register: (data)           => api.post('/auth/register/', data),
+  login:       (email, password)  => api.post('/auth/login/',        { email, password }),
+  logout:      ()                 => api.post('/auth/logout/',        {}),
+  refresh:     (refresh)          => api.post('/auth/refresh/',       { refresh }),
+  me:          ()                 => api.get('/auth/me/'),
+  tenants:     ()                 => api.get('/auth/tenants/'),
+  register:    (data)             => api.post('/auth/register/',      data),
+  googleLogin: (credential)       => api.post('/auth/google/',        { credential }),
 }
 
 export const alertsAPI = {
@@ -36,6 +37,7 @@ export const playbooksAPI = {
   create:  (data)   => api.post('/detection/playbooks/', data),
   update:  (id, d)  => api.patch(`/detection/playbooks/${id}/`, d),
   delete:  (id)     => api.delete(`/detection/playbooks/${id}/`),
+  execute: (id, target_ip, dry_run = false) => api.post(`/detection/playbooks/${id}/execute/`, { target_ip, dry_run }),
 }
 
 export const blocklistAPI = {
@@ -43,6 +45,15 @@ export const blocklistAPI = {
   add:    (data)   => api.post('/detection/blocklist/', data),
   remove: (id)     => api.delete(`/detection/blocklist/${id}/`),
 }
+
+export const complianceReportsAPI = {
+  list:   (params) => api.get('/detection/compliance-reports/', { params }),
+  detail: (id)     => api.get(`/detection/compliance-reports/${id}/`),
+  create: (data)   => api.post('/detection/compliance-reports/', data),
+  update: (id, d)  => api.patch(`/detection/compliance-reports/${id}/`, d),
+  delete: (id)     => api.delete(`/detection/compliance-reports/${id}/`),
+}
+
 
 export const forensicsAPI = {
   // Cases
@@ -70,3 +81,12 @@ export const ingestionAPI = {
   syncWazuh: () => api.post('/ingestion/wazuh/sync/'),
   syncLogs:  (p) => api.get('/ingestion/sync-logs/', { params: p }),
 }
+
+export const assetsAPI = {
+  list:   (params) => api.get('/assets/', { params }),
+  detail: (id)     => api.get(`/assets/${id}/`),
+  create: (data)   => api.post('/assets/', data),
+  update: (id, d)  => api.put(`/assets/${id}/`, d),
+  delete: (id)     => api.delete(`/assets/${id}/`),
+}
+
