@@ -130,9 +130,28 @@ class IncidentViewSet(viewsets.ModelViewSet):
 
 
 class PlaybookViewSet(viewsets.ModelViewSet):
-    """CRUD for response playbooks (SysAdmin only for write operations)."""
+    """
+    CRUD for response playbooks.
+
+    Permission model (principle of least privilege):
+      - list / retrieve / execute  →  Any authenticated tenant user (IsAnalystOrAbove)
+      - create / update / destroy  →  SysAdmin or SuperAdmin only (IsSysAdmin)
+
+    This prevents Security Analysts or Investigators from writing arbitrary
+    shell commands into playbooks — a command-injection risk identified in
+    the security audit.
+    """
     serializer_class = PlaybookSerializer
+
+    # Default: any authenticated tenant user may read
     permission_classes = [permissions.IsAuthenticated, IsAnalystOrAbove]
+
+    def get_permissions(self):
+        """Restrict mutating actions to SysAdmin/SuperAdmin only."""
+        mutating_actions = ("create", "update", "partial_update", "destroy")
+        if self.action in mutating_actions:
+            return [permissions.IsAuthenticated(), IsSysAdmin()]
+        return [permissions.IsAuthenticated(), IsAnalystOrAbove()]
 
     def get_queryset(self):
         return Playbook.objects.filter(tenant=self.request.user.tenant)
@@ -142,12 +161,21 @@ class PlaybookViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="execute")
     def execute(self, request, pk=None):
-        """Manually trigger this playbook against a target IP."""
+        """Manually trigger this playbook against a target IP (Analyst+ can execute)."""
+        import ipaddress
         playbook = self.get_object()
         target_ip = request.data.get("target_ip")
         dry_run = request.data.get("dry_run", False)
         if not target_ip:
             return Response({"error": "target_ip required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Validate IP before passing to shell execution layer
+        try:
+            ipaddress.ip_address(str(target_ip))
+        except ValueError:
+            return Response(
+                {"error": f"Invalid IP address: '{target_ip}'. Must be a valid IPv4 or IPv6 address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         from .tasks import execute_playbook
         task = execute_playbook.delay(str(playbook.id), None, target_ip, dry_run)
         return Response({"message": "Playbook queued.", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)

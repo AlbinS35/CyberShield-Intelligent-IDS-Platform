@@ -414,8 +414,9 @@ export default function NetworkEvents() {
       await ingestionAPI.syncWazuh()
       toast.success("Wazuh sync task queued — fetching latest logs from Wazuh agent")
       setTimeout(() => refetch(), 3000)
-    } catch {
-      toast.error("Wazuh sync failed — ensure the Wazuh API is reachable")
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.response?.data?.detail || "Wazuh sync failed — ensure the Wazuh API is reachable"
+      toast.error(msg, { duration: 6000 })
     } finally {
       setSyncing(false)
     }

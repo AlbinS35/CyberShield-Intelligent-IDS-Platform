@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authAPI } from '../api'
 
+import { setTokens, clearTokens } from '../utils/tokenUtils'
+
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -30,6 +32,9 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const { data } = await authAPI.login(email, password)
+    if (data.access) {
+      setTokens(data.access, data.refresh)
+    }
     const userData = {
       id:         data.user.id,
       role:       data.user.role,
@@ -44,6 +49,9 @@ export function AuthProvider({ children }) {
   // Google OAuth login — sends Google credential to backend
   const loginWithGoogle = useCallback(async (googleCredential) => {
     const { data } = await authAPI.googleLogin(googleCredential)
+    if (data.access) {
+      setTokens(data.access, data.refresh)
+    }
     const userData = {
       id:         data.user.id,
       role:       data.user.role,
@@ -57,6 +65,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try { await authAPI.logout() } catch (_) {}
+    clearTokens()
     setUser(null)
   }, [])
 

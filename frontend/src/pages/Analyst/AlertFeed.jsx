@@ -95,9 +95,9 @@ function AlertRow({ alert, isNew, selected, onSelect, onView }) {
           <span className="text-sm text-gray-200 truncate font-medium">{alert.title}</span>
         </div>
         <div className="col-span-3 flex items-center gap-2 text-xs font-mono text-gray-500">
-          <span className="truncate">{alert.source_ip || "—"}</span>
+          <span className="truncate">{alert.source_ip || "â€”"}</span>
           <span className="text-gray-700">?</span>
-          <span className="truncate">{alert.destination_ip || "—"}</span>
+          <span className="truncate">{alert.destination_ip || "â€”"}</span>
         </div>
         <div className="col-span-2">
           <span className={clsx("text-xs font-semibold", status.cls)}>{status.label}</span>
@@ -155,23 +155,23 @@ function AlertDrawer({ alert, onClose }) {
           <div className="glass-card p-4">
             <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Network Routing</div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <div><div className="text-gray-500 mb-0.5">Source</div><div className="text-cyber-cyan">{alert.source_ip || "—"}</div></div>
+              <div><div className="text-gray-500 mb-0.5">Source</div><div className="text-cyber-cyan">{alert.source_ip || "â€”"}</div></div>
               <ChevronRight className="w-3 h-3 text-gray-600" />
-              <div className="text-right"><div className="text-gray-500 mb-0.5">Destination</div><div className="text-gray-200">{alert.destination_ip || "—"}</div></div>
+              <div className="text-right"><div className="text-gray-500 mb-0.5">Destination</div><div className="text-gray-200">{alert.destination_ip || "â€”"}</div></div>
             </div>
           </div>
           <div className="space-y-2.5">
             {[
               ["Protocol",    alert.protocol],
               ["Status",      STATUS_CONFIG[alert.status]?.label || alert.status],
-              ["ML Class",    alert.ml_classification || "—"],
-              ["Confidence",  alert.ml_confidence ? `${(alert.ml_confidence*100).toFixed(1)}%` : "—"],
-              ["Agent",       alert.agent_hostname || "—"],
+              ["ML Class",    alert.ml_classification || "â€”"],
+              ["Confidence",  alert.ml_confidence ? `${(alert.ml_confidence*100).toFixed(1)}%` : "â€”"],
+              ["Agent",       alert.agent_hostname || "â€”"],
               ["Detected At", format(new Date(alert.created_at), "dd MMM yyyy HH:mm:ss")],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between items-center text-xs border-b border-navy-700/50 pb-2">
                 <span className="text-gray-500">{label}</span>
-                <span className="text-gray-200 font-mono">{value || "—"}</span>
+                <span className="text-gray-200 font-mono">{value || "â€”"}</span>
               </div>
             ))}
           </div>
@@ -225,7 +225,7 @@ export default function AlertFeed() {
     queryKey: ["alerts", "feed", page, search, severity, alertClass],
     queryFn:  () => alertsAPI.list({ page, search: search || undefined, severity: severity || undefined, page_size: 30, ordering: "-created_at" }).then(r => r.data),
     keepPreviousData: true,
-    refetchInterval: 30_000,
+    refetchInterval: 5000,
   })
 
   useEffect(() => {
@@ -359,7 +359,7 @@ export default function AlertFeed() {
         {total > 30 && (
           <div className="px-5 py-3 border-t border-cyber-cyan/10 flex items-center justify-between shrink-0">
             <span className="text-xs text-gray-500">
-              Showing {((page-1)*30)+1}–{Math.min(page*30, total)} of {total.toLocaleString()} alerts
+              Showing {((page-1)*30)+1}â€“{Math.min(page*30, total)} of {total.toLocaleString()} alerts
             </span>
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="btn-ghost text-xs py-1 px-2">? Prev</button>
@@ -373,4 +373,4 @@ export default function AlertFeed() {
       {activeAlert && <AlertDrawer alert={activeAlert} onClose={() => setActiveAlert(null)} />}
     </div>
   )
-}
+}

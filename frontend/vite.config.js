@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import fs from 'fs'
+
+// When running inside Docker container, proxy to 'http://backend:8000'.
+// When running locally on host machine, proxy to 'http://127.0.0.1:8000'.
+const isDocker = fs.existsSync('/.dockerenv')
+const backendTarget = process.env.VITE_BACKEND_URL || (isDocker ? 'http://backend:8000' : 'http://127.0.0.1:8000')
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,12 +27,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: backendTarget,
         changeOrigin: true,
       },
-      // '/ws' WebSocket proxy disabled — Django runserver does not support WebSockets.
-      // To enable live alerts, run Django with Daphne/Channels and re-enable this block:
-      // '/ws': { target: 'ws://localhost:8000', ws: true },
+      '/ws': {
+        target: isDocker ? 'ws://backend:8000' : 'ws://127.0.0.1:8000',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 })

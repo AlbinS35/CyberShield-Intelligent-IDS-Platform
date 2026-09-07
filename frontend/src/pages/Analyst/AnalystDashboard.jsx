@@ -118,14 +118,14 @@ export default function AnalystDashboard() {
   const { data: alertsData, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
     queryKey: ['alerts', 'dashboard'],
     queryFn: () => alertsAPI.list({ page_size: 20, ordering: '-created_at' }).then(r => r.data),
-    refetchInterval: 60_000,
+    refetchInterval: 5000,
   })
 
   // Fetch ML stats
   const { data: mlStats } = useQuery({
     queryKey: ['ml-stats'],
     queryFn: () => mlAPI.stats().then(r => r.data),
-    refetchInterval: 120_000,
+    refetchInterval: 10_000,
   })
 
   // Subscribe to live WebSocket alerts

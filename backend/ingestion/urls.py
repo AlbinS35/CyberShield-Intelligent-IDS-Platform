@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     NetworkEventViewSet, WazuhSyncLogViewSet,
     WazuhSyncTriggerView, SuricataIngestView,
+    IngestionStatusView,
 )
 
 router = DefaultRouter()
@@ -19,4 +20,6 @@ urlpatterns = [
     path("wazuh/sync/", WazuhSyncTriggerView.as_view(), name="wazuh-sync-trigger"),
     # POST /api/ingestion/suricata/ → Suricata watcher event ingestion
     path("suricata/", SuricataIngestView.as_view(), name="suricata-ingest"),
+    # GET  /api/ingestion/status/   → live ingestion pipeline health report
+    path("status/", IngestionStatusView.as_view(), name="ingestion-status"),
 ]

@@ -11,6 +11,7 @@ Drawback mitigations implemented here:
 """
 
 import logging
+import ipaddress
 import subprocess
 import shlex
 from datetime import datetime, timezone
@@ -169,6 +170,12 @@ def _extract_features(raw_data: dict) -> dict:
     data = raw_data.get("data", {})
     # Suricata eve.json uses different key names — normalise both
     suricata = raw_data.get("flow", {})
+
+    # CIC-IDS2017 protocol numeric encoding (IANA assigned protocol numbers)
+    _PROTO_MAP = {"TCP": 6.0, "UDP": 17.0, "ICMP": 1.0, "HOPOPT": 0.0}
+    proto_raw = str(raw_data.get("proto", data.get("protocol_type", ""))).upper()
+    proto_numeric = _PROTO_MAP.get(proto_raw, 0.0)
+
     return {
         "duration":             float(data.get("duration",             suricata.get("duration", 0))),
         "src_bytes":            float(data.get("src_bytes",            raw_data.get("src_bytes", suricata.get("bytes_toserver", 0)))),
@@ -188,6 +195,7 @@ def _extract_features(raw_data: dict) -> dict:
         "dst_host_count":       float(data.get("dst_host_count",       0)),
         "dst_host_srv_count":   float(data.get("dst_host_srv_count",   0)),
         # CIC-IDS2017 flow features (populated from Suricata)
+        "protocol":             proto_numeric,                         # IANA numeric: TCP=6, UDP=17, ICMP=1
         "fwd_packets":          float(suricata.get("pkts_toserver",    0)),
         "bwd_packets":          float(suricata.get("pkts_toclient",    0)),
         "syn_flag_count":       float(raw_data.get("tcp", {}).get("syn", 0)),
@@ -294,8 +302,25 @@ def execute_playbook(self, playbook_id: str, alert_id: str = None, target_ip: st
 
     try:
         for raw_cmd in playbook.commands:
-            # Substitute {ip} placeholder with target IP
-            cmd = raw_cmd.format(ip=target_ip or "0.0.0.0")
+            # ── IP Sanitization: strict validation before any shell substitution ─
+            if target_ip:
+                try:
+                    safe_ip = str(ipaddress.ip_address(target_ip))
+                except ValueError:
+                    logger.error(
+                        f"[Playbook '{playbook.name}'] BLOCKED: target_ip '{target_ip}' "
+                        f"is not a valid IP address. Possible injection attempt. Aborting."
+                    )
+                    execution.status = PlaybookExecution.ExecStatus.FAILED
+                    execution.stderr = f"Security error: invalid target_ip '{target_ip}' rejected by IP sanitizer."
+                    execution.completed_at = datetime.now(tz=timezone.utc)
+                    execution.save()
+                    return str(execution.id)
+            else:
+                safe_ip = "0.0.0.0"
+
+            # Substitute {ip} placeholder with the validated, normalised IP
+            cmd = raw_cmd.format(ip=safe_ip)
             logger.info(f"[Playbook '{playbook.name}'] Running: {cmd}" + (" (DRY RUN)" if dry_run else ""))
 
             if dry_run:

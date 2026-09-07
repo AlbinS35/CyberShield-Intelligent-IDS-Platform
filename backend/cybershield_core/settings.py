@@ -14,10 +14,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ─── Security ────────────────────────────────────────────────────────────────
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR")
 DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost 127.0.0.1").split()
+
+# Accept ALLOWED_HOSTS as either space-separated or comma-separated in .env
+_raw_hosts = config("ALLOWED_HOSTS", default="localhost 127.0.0.1")
+ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.replace(",", " ").split() if h.strip()]
+# Always include Docker service hostname so the suricata-watcher container
+# can POST to http://backend:8000/ without a DisallowedHost rejection.
+for _h in ["backend", "cybershield_backend", ".localhost", "testserver"]:
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
+
 
 # ─── Applications ─────────────────────────────────────────────────────────────
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -171,6 +181,9 @@ REST_FRAMEWORK = {
         "anon": "100/day",
         "user": "1000/day",
         "login_attempts": "5/minute",
+        # Public registration rate-limit: prevents automated tenant flooding
+        # and bulk account-generation attacks (10 registrations per IP per hour).
+        "registration": "10/hour",
     }
 }
 
@@ -184,6 +197,7 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
+    "TOKEN_REFRESH_SERIALIZER": "authentication.serializers.CyberShieldTokenRefreshSerializer",
 }
 
 # ─── CORS Configuration ───────────────────────────────────────────────────────

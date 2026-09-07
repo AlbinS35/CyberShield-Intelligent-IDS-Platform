@@ -35,7 +35,7 @@ class CyberShieldTokenObtainPairView(TokenObtainPairView):
         if response.status_code == 200:
             access_token = response.data.get("access")
             refresh_token = response.data.get("refresh")
-            
+
             response.set_cookie(
                 key="access_token",
                 value=access_token,
@@ -53,13 +53,16 @@ class CyberShieldTokenObtainPairView(TokenObtainPairView):
                 max_age=7*24*3600,
             )
 
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid():
-                user = serializer.user
+            # Log the IP using the user id already returned in the response —
+            # avoids a redundant second authentication call that caused a 500.
+            user_data = response.data.get("user", {})
+            user_id = user_data.get("id") if isinstance(user_data, dict) else None
+            if user_id:
                 x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
                 ip = x_forwarded_for.split(",")[0] if x_forwarded_for else request.META.get("REMOTE_ADDR")
-                User.objects.filter(pk=user.pk).update(last_login_ip=ip)
+                User.objects.filter(pk=user_id).update(last_login_ip=ip)
         return response
+
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -72,9 +75,16 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 
 class UserRegistrationView(generics.CreateAPIView):
-    """POST /api/auth/register/ — Public self-registration for new analysts."""
+    """
+    POST /api/auth/register/ — Public self-registration for new users and organizations.
+
+    Rate-limited to 10 registrations per IP per hour (ScopedRateThrottle: 'registration')
+    to prevent automated tenant flooding and bulk account-generation attacks.
+    """
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "registration"
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -198,18 +208,44 @@ class GoogleLoginView(APIView):
 
 
 from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from django.contrib.auth import get_user_model
+from .serializers import CyberShieldTokenRefreshSerializer
 
 class CookieTokenRefreshView(TokenRefreshView):
     """
     Custom token refresh view that reads the refresh token from a cookie
     and writes the rotated tokens back into browser cookies.
+    Cleans up stale cookies and returns HTTP 401 if user no longer exists or token is invalid.
     """
+    serializer_class = CyberShieldTokenRefreshSerializer
+
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
         if refresh_token and "refresh" not in request.data:
-            request.data["refresh"] = refresh_token
+            if hasattr(request.data, "_mutable") and not request.data._mutable:
+                request.data._mutable = True
+                request.data["refresh"] = refresh_token
+                request.data._mutable = False
+            elif isinstance(request.data, dict):
+                request.data["refresh"] = refresh_token
+            else:
+                try:
+                    request.data["refresh"] = refresh_token
+                except Exception:
+                    pass
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except (InvalidToken, TokenError, get_user_model().DoesNotExist):
+            response = Response(
+                {"detail": "Token is invalid or user no longer exists.", "code": "token_not_valid"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+            return response
+
         if response.status_code == 200:
             access_token = response.data.get("access")
             response.set_cookie(
@@ -230,6 +266,10 @@ class CookieTokenRefreshView(TokenRefreshView):
                     samesite="Strict",
                     max_age=7*24*3600,
                 )
+        else:
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+
         return response
 
 
@@ -241,10 +281,25 @@ class CookieTokenBlacklistView(TokenBlacklistView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
         if refresh_token and "refresh" not in request.data:
-            request.data["refresh"] = refresh_token
+            if hasattr(request.data, "_mutable") and not request.data._mutable:
+                request.data._mutable = True
+                request.data["refresh"] = refresh_token
+                request.data._mutable = False
+            elif isinstance(request.data, dict):
+                request.data["refresh"] = refresh_token
+            else:
+                try:
+                    request.data["refresh"] = refresh_token
+                except Exception:
+                    pass
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except Exception:
+            response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
         return response
+
 
