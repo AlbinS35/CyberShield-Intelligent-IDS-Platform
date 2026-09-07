@@ -1,0 +1,175 @@
+services:
+
+  # ── PostgreSQL Database ────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: cybershield_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       cybershield_db
+      POSTGRES_USER:     cybershield_user
+      POSTGRES_PASSWORD: cybershield_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cybershield_user -d cybershield_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Celery broker + Django Channels) ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: cybershield_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Django Backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cybershield_backend
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             uvicorn cybershield_core.asgi:application --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+      - media_data:/app/media
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DB_HOST:    db
+      REDIS_HOST: redis
+      REDIS_URL:  redis://redis:6379/0
+    depends_on:
+      db:    { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  # ── Celery Worker ──────────────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cybershield_celery
+    restart: unless-stopped
+    command: celery -A cybershield_core worker --loglevel=info --concurrency=4
+    volumes:
+      - ./backend:/app
+    env_file: .env
+    environment:
+      DB_HOST:    db
+      REDIS_HOST: redis
+      REDIS_URL:  redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  # ── Celery Beat (Periodic Tasks) ───────────────────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cybershield_beat
+    restart: unless-stopped
+    command: celery -A cybershield_core beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./backend:/app
+    env_file: .env
+    environment:
+      DB_HOST:    db
+      REDIS_HOST: redis
+      REDIS_URL:  redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  # ── React Frontend (Dev) ───────────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: cybershield_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+
+  # ── Suricata NIDS Sensor ───────────────────────────────────────────────────
+  # IMPORTANT: Suricata requires Linux host networking to sniff the Docker bridge.
+  # On Windows / macOS Docker Desktop, the Docker bridge runs inside a VM so
+  # Suricata will not capture host traffic. In that case:
+  #   - Comment out this service
+  #   - Use simulate_traffic.py for local development
+  #   - Deploy Suricata on a Linux VM or CI server for realistic testing
+  #
+  # On Linux: ensure the interface in suricata/suricata.yaml matches your
+  # Docker bridge (default: docker0 or eth0).
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: cybershield_suricata
+    restart: unless-stopped
+    # host networking required for AF_PACKET to capture live Docker traffic
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - suricata_logs:/var/log/suricata
+      - suricata_rules:/var/lib/suricata/rules
+    command: >
+      sh -c "suricata-update && suricata -c /etc/suricata/suricata.yaml --af-packet"
+    profiles:
+      # Only starts when explicitly requested:
+      #   docker compose --profile nids up -d
+      # This prevents breaking Windows/macOS dev environments.
+      - nids
+
+  # ── Suricata EVE Watcher → CyberShield Ingestion Bridge ──────────────────
+  # Tails suricata/eve.json and forwards each alert line to the CyberShield
+  # ingestion API. Works on ALL platforms because it only reads from the shared
+  # suricata_logs volume (no raw packet access needed).
+  #
+  # On Windows/macOS dev: mount simulate_traffic output to suricata_logs
+  # and the watcher will process those events through the same pipeline.
+  suricata-watcher:
+    build:
+      context: ./suricata
+      dockerfile: Dockerfile.watcher
+    container_name: cybershield_suricata_watcher
+    restart: unless-stopped
+    volumes:
+      - suricata_logs:/var/log/suricata:ro
+    environment:
+      CYBERSHIELD_API_URL:    http://backend:8000
+      CYBERSHIELD_API_TOKEN:  ${SURICATA_API_TOKEN:-}      # service-account JWT
+      CYBERSHIELD_TENANT_ID:  ${DEFAULT_TENANT_ID:-}
+      EVE_LOG_PATH:           /var/log/suricata/eve.json
+    depends_on:
+      - backend
+    profiles:
+      # Starts with either 'nids' (Linux) or 'watcher' (cross-platform dev)
+      - nids
+      - watcher
+
+volumes:
+  postgres_data:
+  media_data:
+  suricata_logs:
+  suricata_rules:

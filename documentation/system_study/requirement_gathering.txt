@@ -1,1 +1,27 @@
 # Operational constraints gathered from site target fields
+# Document: Requirements Gathering — CyberShield IDS Platform
+
+## Target Deployment Environment
+- Banking and private audit infrastructure (Kerala, India)
+- On-premise servers, air-gapped or semi-isolated networks
+- Existing Wazuh agent deployments on endpoint machines
+
+## Functional Requirements
+1. Real-time network event ingestion from Wazuh Manager API
+2. AI/ML classification of intrusion attempts (>90% precision)
+3. Automated incident response: IP blocking, device isolation
+4. Digital forensics: evidence vault, SHA-256 verification, timeline reconstruction
+5. Multi-tenant RBAC: Analyst / Investigator / Admin / Manager roles
+6. Compliance audit trail: all actions logged and immutable
+
+## Non-Functional Requirements
+- Response time: Alert detection to WebSocket delivery < 2 seconds
+- ML inference latency: < 50ms per prediction
+- Evidence integrity: SHA-256 tamper detection on all log records
+- Availability: 99.9% uptime target for production deployment
+
+## Constraints
+- PostgreSQL for relational + JSONB log storage
+- No third-party cloud storage (on-premise only)
+- Python Django backend only (institutional compliance)
+- MCA project scope: Phase 1 (Core) + Phase 2 (ML) dual-phase roadmap
