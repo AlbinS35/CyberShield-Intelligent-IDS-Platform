@@ -1,0 +1,929 @@
+{
+  "info": {
+    "_postman_id": "cybershield-ids-collection-v1",
+    "name": "CyberShield IDS — Full API Test Suite",
+    "description": "Complete API test collection for CyberShield: Intelligent Intrusion Detection, Prevention, and Digital Forensics Platform.\n\nProject: MCA Research Project (24MCAR295) — Amal Jyothi College of Engineering\nStudent: Albin Suresh (Roll No: 8)\nScrum Master: Mr. Jinson Devis\n\nHow to use:\n1. Import this collection into Postman.\n2. Import the CyberShield_Environment.json file as an Environment.\n3. Run 'TC-001 Login' first — the access token is auto-saved to the environment.\n4. All other requests use {{access_token}} automatically.\n5. Use Collection Runner to run all tests in sequence.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" },
+    { "key": "alert_id", "value": "", "type": "string" },
+    { "key": "incident_id", "value": "", "type": "string" },
+    { "key": "case_id", "value": "", "type": "string" },
+    { "key": "event_id", "value": "", "type": "string" },
+    { "key": "playbook_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 1. Authentication",
+      "item": [
+        {
+          "name": "TC-001 | Login — Valid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-001: Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-001: Response has access token', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('access');",
+                  "});",
+                  "pm.test('TC-001: Response has refresh token', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('refresh');",
+                  "});",
+                  "pm.test('TC-001: Response contains user profile object', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('user');",
+                  "    pm.expect(pm.response.json().user).to.have.property('email');",
+                  "    pm.expect(pm.response.json().user).to.have.property('role');",
+                  "});",
+                  "// Auto-save tokens to collection variables for all subsequent requests",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', json.access);",
+                  "    pm.collectionVariables.set('refresh_token', json.refresh);",
+                  "    console.log('✅ Tokens saved. Role:', json.user.role);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@cybershield.local\",\n  \"password\": \"CyberShield@2026\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+          }
+        },
+        {
+          "name": "TC-002 | Login — Invalid Password (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-002: Invalid password returns 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('TC-002: Response does NOT contain an access token', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('access');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@cybershield.local\",\n  \"password\": \"WRONG_PASSWORD\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+          }
+        },
+        {
+          "name": "TC-003 | Login — Empty Body (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-003: Empty body returns 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+          }
+        },
+        {
+          "name": "TC-004 | Get My Profile (Authenticated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-004: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-004: Profile contains email field', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('email');",
+                  "});",
+                  "pm.test('TC-004: Profile contains role field', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('role');",
+                  "});",
+                  "pm.test('TC-004: Response time under 500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/auth/me/", "host": ["{{base_url}}"], "path": ["api", "auth", "me", ""] }
+          }
+        },
+        {
+          "name": "TC-005 | Get Profile — No Token (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-005: No token returns 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/auth/me/", "host": ["{{base_url}}"], "path": ["api", "auth", "me", ""] }
+          }
+        },
+        {
+          "name": "TC-006 | Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-006: Token refresh returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-006: New access token is returned', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('access');",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('access_token', pm.response.json().access);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/refresh/", "host": ["{{base_url}}"], "path": ["api", "auth", "refresh", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📡 2. Network Event Ingestion",
+      "item": [
+        {
+          "name": "TC-007 | List Network Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-007: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-007: Response is paginated (has count)', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('count');",
+                  "});",
+                  "pm.test('TC-007: Results array exists', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('results');",
+                  "});",
+                  "pm.test('TC-007: Response time under 1000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "// Save first event ID for subsequent tests",
+                  "const results = pm.response.json().results;",
+                  "if (results && results.length > 0) {",
+                  "    pm.collectionVariables.set('event_id', results[0].id);",
+                  "    console.log('Event ID saved:', results[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/ingestion/network-events/", "host": ["{{base_url}}"], "path": ["api", "ingestion", "network-events", ""] }
+          }
+        },
+        {
+          "name": "TC-008 | Filter Events by Threat Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-008: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-008: All returned events are threats', function () {",
+                  "    const results = pm.response.json().results || [];",
+                  "    results.forEach(function(event) {",
+                  "        pm.expect(event.is_threat).to.be.true;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/ingestion/network-events/?is_threat=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ingestion", "network-events", ""],
+              "query": [{ "key": "is_threat", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "TC-009 | Verify SHA-256 Hash Integrity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-009: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-009: integrity_valid field is present', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('integrity_valid');",
+                  "});",
+                  "pm.test('TC-009: SHA-256 hash integrity confirmed (not tampered)', function () {",
+                  "    pm.expect(pm.response.json().integrity_valid).to.be.true;",
+                  "});",
+                  "pm.test('TC-009: Stored hash is a 64-char hex string', function () {",
+                  "    const hash = pm.response.json().stored_hash;",
+                  "    pm.expect(hash).to.have.lengthOf(64);",
+                  "    pm.expect(hash).to.match(/^[0-9a-f]{64}$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/ingestion/network-events/{{event_id}}/verify-hash/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ingestion", "network-events", "{{event_id}}", "verify-hash", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-010 | No Auth — Network Events (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-010: Unauthenticated request returns 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/ingestion/network-events/", "host": ["{{base_url}}"], "path": ["api", "ingestion", "network-events", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚨 3. Threat Detection & Alerts",
+      "item": [
+        {
+          "name": "TC-011 | List All Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-011: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-011: Alerts list is paginated', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('count');",
+                  "    pm.expect(pm.response.json()).to.have.property('results');",
+                  "});",
+                  "// Save first alert ID",
+                  "const results = pm.response.json().results;",
+                  "if (results && results.length > 0) {",
+                  "    pm.collectionVariables.set('alert_id', results[0].id);",
+                  "    console.log('Alert ID saved:', results[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/alerts/", "host": ["{{base_url}}"], "path": ["api", "detection", "alerts", ""] }
+          }
+        },
+        {
+          "name": "TC-012 | Filter Alerts by Severity=CRITICAL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-012: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-012: All alerts have CRITICAL severity', function () {",
+                  "    const results = pm.response.json().results || [];",
+                  "    results.forEach(function(alert) {",
+                  "        pm.expect(alert.severity).to.equal('CRITICAL');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/?severity=CRITICAL",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", ""],
+              "query": [{ "key": "severity", "value": "CRITICAL" }]
+            }
+          }
+        },
+        {
+          "name": "TC-013 | Filter Alerts by Attack Type=DOS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-013: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-013: All alerts have DOS attack_type', function () {",
+                  "    const results = pm.response.json().results || [];",
+                  "    results.forEach(function(alert) {",
+                  "        pm.expect(alert.attack_type).to.equal('DOS');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/?attack_type=DOS",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", ""],
+              "query": [{ "key": "attack_type", "value": "DOS" }]
+            }
+          }
+        },
+        {
+          "name": "TC-014 | Get Alert Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-014: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-014: Alert has required fields', function () {",
+                  "    const a = pm.response.json();",
+                  "    pm.expect(a).to.have.property('id');",
+                  "    pm.expect(a).to.have.property('title');",
+                  "    pm.expect(a).to.have.property('severity');",
+                  "    pm.expect(a).to.have.property('status');",
+                  "    pm.expect(a).to.have.property('attack_type');",
+                  "    pm.expect(a).to.have.property('ml_confidence');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/{{alert_id}}/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", "{{alert_id}}", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-015 | Update Alert Status to ACKNOWLEDGED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-015: Status 200 OK on PATCH', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACKNOWLEDGED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/{{alert_id}}/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", "{{alert_id}}", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-016 | Escalate Alert to Incident",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-016: Escalation returns 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-016: Response contains incident ID', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('id');",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('incident_id', pm.response.json().id);",
+                  "    console.log('Incident ID saved:', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/{{alert_id}}/escalate/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", "{{alert_id}}", "escalate", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-017 | Get ML SHAP Explanation for Alert",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-017: Status is 200 or 404 (no log yet)', function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('TC-017: Explanation has prediction field', function () {",
+                  "        pm.expect(pm.response.json()).to.have.property('prediction');",
+                  "    });",
+                  "    pm.test('TC-017: Explanation has confidence field', function () {",
+                  "        pm.expect(pm.response.json()).to.have.property('confidence');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/detection/alerts/{{alert_id}}/explain/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "detection", "alerts", "{{alert_id}}", "explain", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-018 | Get ML Model Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-018: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-018: Response contains model_info', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('model_info');",
+                  "});",
+                  "pm.test('TC-018: Response contains tenant_stats', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('tenant_stats');",
+                  "    pm.expect(pm.response.json().tenant_stats).to.have.property('total_inferences');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/ml/stats/", "host": ["{{base_url}}"], "path": ["api", "detection", "ml", "stats", ""] }
+          }
+        },
+        {
+          "name": "TC-019 | List Incidents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-019: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-019: Results array present', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('results');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/incidents/", "host": ["{{base_url}}"], "path": ["api", "detection", "incidents", ""] }
+          }
+        },
+        {
+          "name": "TC-020 | List IP Blocklist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-020: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/blocklist/", "host": ["{{base_url}}"], "path": ["api", "detection", "blocklist", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔬 4. Forensics",
+      "item": [
+        {
+          "name": "TC-021 | List Forensic Cases",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-021: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const results = pm.response.json().results || pm.response.json();",
+                  "if (Array.isArray(results) && results.length > 0) {",
+                  "    pm.collectionVariables.set('case_id', results[0].id);",
+                  "} else if (pm.response.json().results && pm.response.json().results.length > 0) {",
+                  "    pm.collectionVariables.set('case_id', pm.response.json().results[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/forensics/cases/", "host": ["{{base_url}}"], "path": ["api", "forensics", "cases", ""] }
+          }
+        },
+        {
+          "name": "TC-022 | Create Forensic Case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-022: Case created with 201 status', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('TC-022: Case has UUID id', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('id');",
+                  "    pm.expect(pm.response.json().id).to.have.lengthOf(36);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('case_id', pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Case — DoS Investigation\",\n  \"description\": \"Automated test case created via Postman Collection Runner.\",\n  \"status\": \"OPEN\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/forensics/cases/", "host": ["{{base_url}}"], "path": ["api", "forensics", "cases", ""] }
+          }
+        },
+        {
+          "name": "TC-023 | Get Case Timeline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-023: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-023: Timeline response is an array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/forensics/cases/{{case_id}}/timeline/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "forensics", "cases", "{{case_id}}", "timeline", ""]
+            }
+          }
+        },
+        {
+          "name": "TC-024 | Get Case Evidence List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-024: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-024: Evidence response is an array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/forensics/cases/{{case_id}}/evidence/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "forensics", "cases", "{{case_id}}", "evidence", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 5. Compliance & Reports",
+      "item": [
+        {
+          "name": "TC-025 | List Compliance Reports",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-025: Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/compliance-reports/", "host": ["{{base_url}}"], "path": ["api", "detection", "compliance-reports", ""] }
+          }
+        },
+        {
+          "name": "TC-026 | Generate New Compliance Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-026: Report created with 201 status', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('TC-026: Report has findings array', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('findings');",
+                  "});",
+                  "pm.test('TC-026: Report has metrics object', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('metrics');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Week 12 Automated Compliance Snapshot\",\n  \"report_type\": \"ISO_27001\",\n  \"auditor_notes\": \"Generated via Postman automated test suite for Scrum Review 3.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/detection/compliance-reports/", "host": ["{{base_url}}"], "path": ["api", "detection", "compliance-reports", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ 6. Security & Edge Cases",
+      "item": [
+        {
+          "name": "TC-027 | Access API with Expired/Invalid Token (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-027: Invalid token returns 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer INVALID_TOKEN_STRING_XYZ" }],
+            "url": { "raw": "{{base_url}}/api/detection/alerts/", "host": ["{{base_url}}"], "path": ["api", "detection", "alerts", ""] }
+          }
+        },
+        {
+          "name": "TC-028 | OpenAPI Schema is Accessible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-028: Swagger schema endpoint returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('TC-028: Schema content-type is YAML or JSON', function () {",
+                  "    const ct = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(ct).to.satisfy(function(v) {",
+                  "        return v.includes('yaml') || v.includes('json') || v.includes('text');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/schema/", "host": ["{{base_url}}"], "path": ["api", "schema", ""] }
+          }
+        },
+        {
+          "name": "TC-029 | Playbook List (Analyst Access)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-029: Analyst can read playbooks — 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "// Save first playbook ID for trigger test",
+                  "const results = pm.response.json().results || pm.response.json();",
+                  "if (results && results.length > 0) {",
+                  "    pm.collectionVariables.set('playbook_id', results[0].id);",
+                  "    console.log('Playbook ID saved:', results[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/api/detection/playbooks/", "host": ["{{base_url}}"], "path": ["api", "detection", "playbooks", ""] }
+          }
+        },
+        {
+          "name": "TC-030 | Logout — Blacklist Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-030: Logout returns 200 or 205', function () {",
+                  "    pm.expect([200, 205, 204]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/logout/", "host": ["{{base_url}}"], "path": ["api", "auth", "logout", ""] }
+          }
+        }
+      ]
+    }
+  ]
+}
