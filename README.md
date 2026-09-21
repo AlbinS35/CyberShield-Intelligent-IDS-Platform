@@ -144,7 +144,7 @@ CyberShield-Intelligent-IDS-Platform/
 │       ├── context/            ← Auth, Theme, Socket contexts
 │       └── utils/              ← Helpers, crypto, formatters
 ├── ml_pipeline/                ← Standalone ML training scripts
-├── documentation/              ← System study, screenshots
+├── documentation/              ← System study, screenshots, core concepts
 ├── docker-compose.yml
 └── .env.example
 ```
