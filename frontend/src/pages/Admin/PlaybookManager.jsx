@@ -53,26 +53,31 @@ export default function PlaybookManager() {
   const { data: playbooks, isLoading: playbooksLoading, refetch: refetchPlaybooks } = useQuery({
     queryKey: ['playbooks'],
     queryFn: () => playbooksAPI.list().then(r => r.data?.results || r.data || []),
+    refetchInterval: 5000, // Fetch every 5 seconds
   })
 
   const { data: blocklist, isLoading: blocklistLoading, refetch: refetchBlocklist } = useQuery({
     queryKey: ['blocklist'],
     queryFn: () => blocklistAPI.list().then(r => r.data?.results || r.data || []),
+    refetchInterval: 5000,
   })
 
   const { data: executions, isLoading: executionsLoading, refetch: refetchExecutions } = useQuery({
     queryKey: ['playbook-executions'],
     queryFn: () => axios.get('/detection/executions/').then(r => r.data?.results || r.data || []),
+    refetchInterval: 3000,
   })
 
   const { data: users, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
     queryKey: ['admin-users-list'],
     queryFn: () => axios.get('/core/logins/').then(r => r.data?.results || r.data || []),
+    refetchInterval: 10000,
   })
 
   const { data: coreUsers } = useQuery({
     queryKey: ['admin-core-users'],
     queryFn: () => axios.get('/core/users/').then(r => r.data?.results || r.data || []),
+    refetchInterval: 30000,
   })
 
   const handleCreateUser = async (e) => {

@@ -318,6 +318,7 @@ export default function AssetRegistry() {
                     className="cyber-input w-full bg-navy-800"
                     required
                   >
+                    <option value="" disabled>Select Organization</option>
                     {organizations?.map(org => (
                       <option key={org.org_id} value={org.org_id}>{org.org_name}</option>
                     ))}

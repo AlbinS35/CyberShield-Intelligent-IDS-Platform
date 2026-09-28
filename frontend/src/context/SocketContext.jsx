@@ -18,8 +18,10 @@ export function SocketProvider({ children }) {
     // Guard: skip if WS not enabled or user not logged in or already open
     if (!WS_ENABLED || !user || wsRef.current?.readyState === WebSocket.OPEN) return
     const token = getAccessToken()
+    if (!token) return
+
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const query = token ? `?token=${encodeURIComponent(token)}` : ''
+    const query = `?token=${encodeURIComponent(token)}`
     const wsUrl = `${wsProto}//${window.location.host}/ws/alerts/${query}`
 
     try {
@@ -46,11 +48,13 @@ export function SocketProvider({ children }) {
         }
       }
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setIsConnected(false)
         clearInterval(ws._pingInterval)
-        // Auto-reconnect after 5s
-        if (WS_ENABLED) setTimeout(() => { if (user) connect() }, 5000)
+        // Auto-reconnect after 5s only if not unauthorized (code 4001)
+        if (WS_ENABLED && event.code !== 4001) {
+          setTimeout(() => { if (user) connect() }, 5000)
+        }
       }
 
       ws.onerror = (err) => {

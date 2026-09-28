@@ -23,6 +23,7 @@
 
   html, body, #root {
     @apply h-full;
+    overscroll-behavior-x: none;
   }
 
   body {
