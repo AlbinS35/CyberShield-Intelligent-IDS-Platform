@@ -96,10 +96,18 @@ CHANNEL_LAYERS = {
     },
 }
 
-# ─── Database — PostgreSQL with JSONB support ─────────────────────────────────
+# ─── Database — PostgreSQL / TiDB support ─────────────────────────────────────
+DB_ENGINE_CHOICE = config("DB_ENGINE", default="postgresql")
+if DB_ENGINE_CHOICE == "mysql":
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    DB_ENGINE = "django.db.backends.mysql"
+else:
+    DB_ENGINE = "django.db.backends.postgresql"
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": DB_ENGINE,
         "NAME": config("DB_NAME", default="cybershield_db"),
         "USER": config("DB_USER", default="cybershield_user"),
         "PASSWORD": config("DB_PASSWORD", default="cybershield_pass"),
@@ -110,6 +118,12 @@ DATABASES = {
         },
     }
 }
+
+if DB_ENGINE == "django.db.backends.mysql":
+    DATABASES["default"]["OPTIONS"] = {
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        "connect_timeout": 10,
+    }
 
 # ─── Cache Backend ────────────────────────────────────────────────────────────
 CACHES = {
