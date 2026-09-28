@@ -20,16 +20,29 @@ from core.urls import (
 )
 
 def api_root(_request):
-    return HttpResponseRedirect("http://127.0.0.1:5173/")
+    frontend_url = settings.CORS_ALLOWED_ORIGINS[-1] if settings.CORS_ALLOWED_ORIGINS else "http://127.0.0.1:5173"
+    return HttpResponseRedirect(frontend_url)
 
 
 def favicon(_request):
     return HttpResponse(status=204)
 
 
+def health_check(_request):
+    """Render health check endpoint — returns 200 OK."""
+    from django.db import connection
+    try:
+        connection.ensure_connection()
+        db_status = "ok"
+    except Exception:
+        db_status = "error"
+    from django.http import JsonResponse
+    return JsonResponse({"status": "ok", "db": db_status})
+
 urlpatterns = [
     path("", api_root, name="api-root"),
     path("favicon.ico", favicon, name="favicon"),
+    path("api/health/", health_check, name="health-check"),
 
     # ─── Django Admin ────────────────────────────────────────────────────────
     path("admin/", admin.site.urls),

@@ -59,6 +59,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ─── Middleware ───────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",      # Serve static files efficiently
     "corsheaders.middleware.CorsMiddleware",          # Must be before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -212,7 +213,8 @@ SIMPLE_JWT = {
 }
 
 # ─── CORS Configuration ───────────────────────────────────────────────────────
-# Allow React/Vite frontend (http://localhost:5173) and other local origins
+# Allow React/Vite frontend locally and on Render (read FRONTEND_URL from env)
+_frontend_url = config("FRONTEND_URL", default="")
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",   # Vite dev server (primary React frontend)
     "http://localhost:5174",   # Vite fallback port
@@ -220,13 +222,18 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
 ]
+if _frontend_url:
+    CORS_ALLOWED_ORIGINS.append(_frontend_url)
 
-CSRF_TRUSTED_ORIGINS = [
+_csrf_origins = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
 ]
+if _frontend_url:
+    _csrf_origins.append(_frontend_url)
+CSRF_TRUSTED_ORIGINS = _csrf_origins
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -265,8 +272,16 @@ SPECTACULAR_SETTINGS = {
 # ─── Static & Media ───────────────────────────────────────────────────────────
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ─── Production Security (enabled when DEBUG=False) ───────────────────────────
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = False   # Render handles SSL termination upstream
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # ─── Default primary key ─────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

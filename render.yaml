@@ -1,0 +1,74 @@
+# =============================================================================
+# render.yaml — CyberShield IDS Platform Deployment Blueprint
+# Defines: PostgreSQL DB, Django Backend, React Frontend
+# https://render.com/docs/blueprint-spec
+# =============================================================================
+
+databases:
+  - name: cybershield-db
+    databaseName: cybershield_db
+    user: cybershield_user
+    plan: free
+    region: oregon
+
+services:
+  # --- Django Backend (Web Service) ------------------------------------------
+  - type: web
+    name: cybershield-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DB_NAME
+        fromDatabase:
+          name: cybershield-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: cybershield-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cybershield-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: cybershield-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: cybershield-db
+          property: port
+      - key: REDIS_URL
+        value: "redis://localhost:6379/0"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://cybershield-frontend.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://cybershield-frontend.onrender.com"
+
+  # --- React Frontend (Static Site) ------------------------------------------
+  - type: web
+    name: cybershield-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
+    region: oregon
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: "https://cybershield-backend.onrender.com"
+      - key: VITE_WS_URL
+        value: "wss://cybershield-backend.onrender.com"
