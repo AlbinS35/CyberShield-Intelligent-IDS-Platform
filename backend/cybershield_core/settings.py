@@ -92,10 +92,7 @@ ASGI_APPLICATION = "cybershield_core.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(config("REDIS_HOST", default="127.0.0.1"), 6379)],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
 
@@ -204,8 +201,17 @@ SIMPLE_JWT = {
 # Allow React/Vite frontend (http://localhost:5173) and other local origins
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",   # Vite dev server (primary React frontend)
+    "http://localhost:5174",   # Vite fallback port
     "http://localhost:3000",   # Create-React-App fallback
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -256,3 +262,7 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
+
+# Email Configuration for Password Reset
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@cybershield.demo'
