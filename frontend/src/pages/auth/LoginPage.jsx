@@ -188,12 +188,32 @@ export default function LoginPage() {
   const handleRoleSelect = (role) => {
     setSelectedRole(role.key)
     setEmail(role.email)
+    setPassword('CyberShield@2024')
     setError('')
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    // — Frontend validation guard —
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email.trim()) {
+      setError('Email address is required.')
+      toast.error('Email address is required.')
+      return
+    }
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.')
+      toast.error('Please enter a valid email address.')
+      return
+    }
+    if (!password) {
+      setError('Password is required.')
+      toast.error('Password is required.')
+      return
+    }
+
     setLoading(true)
     try {
       const user = await login(email, password)
@@ -202,9 +222,10 @@ export default function LoginPage() {
         ANALYST: '/analyst', INVESTIGATOR: '/forensics',
         SYS_ADMIN: '/admin', ORG_MANAGER: '/org', SUPER_ADMIN: '/analyst',
       }
-      navigate(routes[user?.role] || '/analyst')
+      navigate(routes[user?.role] || '/analyst', { replace: true })
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Invalid credentials. Please try again.'
+      const msg = err?.response?.data?.detail 
+        || (err?.response ? 'Invalid credentials. Please try again.' : 'Unable to connect to backend server (port 8000). Please ensure Django is running.')
       setError(msg)
       toast.error(msg)
     } finally {
@@ -344,7 +365,24 @@ export default function LoginPage() {
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-                <div style={{ textAlign: 'right', marginTop: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(220,228,228,0.45)' }}>
+                    Demo password:{' '}
+                    <code
+                      style={{
+                        color: '#00F5FF',
+                        background: 'rgba(0,245,255,0.08)',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                      title="Click to fill password"
+                      onClick={() => setPassword('CyberShield@2024')}
+                    >
+                      CyberShield@2024
+                    </code>
+                  </span>
                   <Link to="/forgot-password" style={{ fontSize: 12, color: '#00F5FF', textDecoration: 'none', fontWeight: 500 }}>Forgot Password?</Link>
                 </div>
               </div>

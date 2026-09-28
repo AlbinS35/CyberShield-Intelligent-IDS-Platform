@@ -23,7 +23,7 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // Guard: Prevent intercepting Auth requests (login/refresh) to avoid recursion loop
-    const isAuthRequest = originalRequest.url.includes('/auth/refresh/') || originalRequest.url.includes('/auth/login/')
+    const isAuthRequest = originalRequest.url.includes('/auth/refresh/') || originalRequest.url.includes('/auth/login/') || originalRequest.url.includes('/auth/password-reset/')
 
     // Intercept 401 Unauthorized for expired access token
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
@@ -46,7 +46,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError)
         // Session completely expired — redirect to login only if accessing private routes
-        const publicRoutes = ['/', '/login', '/signup', '/register', '/forgot-password']
+        const publicRoutes = ['/', '/login', '/signup', '/register', '/forgot-password', '/reset-password']
         if (!publicRoutes.includes(window.location.pathname)) {
           window.location.href = '/login'
         }

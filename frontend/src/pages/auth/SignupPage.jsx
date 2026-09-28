@@ -134,12 +134,12 @@ const ROLES = [
 
 const INDUSTRIES = ['Banking & Finance', 'Healthcare', 'Information Technology', 'Auditing & Accounting', 'Legal & Compliance', 'Government & Defense', 'Education', 'Retail & E-commerce', 'Manufacturing', 'Other']
 
-function InputField({ icon: Icon, label, type = 'text', placeholder, value, onChange, required = false, error, children }) {
+function InputField({ icon: Icon, label, type = 'text', placeholder, value, onChange, onBlur, required = false, error, children }) {
   return (
     <div>
       {label && <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(220,228,228,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'block', marginBottom: 7 }}>{label}</label>}
       <div style={{ position: 'relative' }}>
-        {Icon && <Icon size={13} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(220,228,228,0.3)', pointerEvents: 'none' }} />}
+        {Icon && <Icon size={13} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: error ? '#FF3366' : 'rgba(220,228,228,0.3)', pointerEvents: 'none' }} />}
         {children || (
           <input
             className={Icon ? 'su-input' : 'su-input-noicon'}
@@ -147,7 +147,9 @@ function InputField({ icon: Icon, label, type = 'text', placeholder, value, onCh
             placeholder={placeholder}
             value={value}
             onChange={onChange}
+            onBlur={onBlur}
             required={required}
+            autoComplete="off"
             style={error ? { borderColor: '#FF3366', boxShadow: '0 0 0 2px rgba(255,51,102,0.15)' } : {}}
           />
         )}
@@ -194,69 +196,110 @@ export default function SignupPage() {
   })
   const tenants = tenantsData?.results || tenantsData || []
 
+  // ─── Shared validation rules ────────────────────────────────────────────────
+  const EMAIL_RE   = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
+  const PHONE_RE   = /^\+?[0-9][0-9\-]{9,14}$/   // must START with + or digit
+  const NAME_RE    = /^[a-zA-Z][a-zA-Z\s'\-]{1,}$/  // letters, space, hyphen, apostrophe; min 2 chars
+  const ORG_RE     = /[a-zA-Z]/                    // must contain at least one letter
+
+  // Validate a single field by key; returns error string or ''
+  const validateField = (key, val, extra = {}) => {
+    const v = typeof val === 'string' ? val.trim() : val
+    switch (key) {
+      case 'orgName': {
+        if (!v) return 'Organization Name is required.'
+        if (v.length < 2) return 'Organization Name must be at least 2 characters.'
+        // Must contain at least one letter — reject pure numbers like '78960489'
+        if (!/[a-zA-Z]/.test(v)) return 'Organization Name must contain letters, not just numbers or symbols.'
+        // Must not be purely digits/spaces/symbols
+        if (/^[^a-zA-Z]+$/.test(v)) return 'Organization Name cannot be purely numeric or symbolic.'
+        // No leading digits
+        if (/^[0-9]/.test(v)) return 'Organization Name must start with a letter, not a number.'
+        return ''
+      }
+      case 'contactEmail':
+      case 'userEmail':
+        if (!v) return 'Email address is required.'
+        if (!EMAIL_RE.test(v)) return 'Enter a valid email address (e.g. name@company.com).'
+        return ''
+      case 'adminName':
+      case 'fullName': {
+        if (!v) return 'Full Name is required.'
+        if (/[0-9]/.test(v)) return 'Name must contain only letters — no numbers allowed.'
+        if (!/^[a-zA-Z][a-zA-Z\s'\-]*$/.test(v)) return 'Name must start with a letter and contain only letters, spaces, hyphens, or apostrophes.'
+        const parts = v.split(/\s+/).filter(Boolean)
+        if (parts.length < 2) return 'Please enter both first and last name.'
+        if (parts.some(p => p.length < 2)) return 'Each part of your name must be at least 2 characters.'
+        return ''
+      }
+      case 'phone':
+      case 'userPhone': {
+        if (!v) return '' // optional
+        const stripped = v.replace(/[\s()]/g, '')
+        if (!PHONE_RE.test(stripped))
+          return 'Enter a valid phone number starting with + or a digit (10–15 digits). Example: +91 98765-43210'
+        return ''
+      }
+      case 'orgPassword':
+      case 'userPassword': {
+        if (!v) return 'Password is required.'
+        if (v.length < 8) return 'Password must be at least 8 characters.'
+        if (!/[A-Z]/.test(v)) return 'Password must contain at least one uppercase letter.'
+        if (!/[a-z]/.test(v)) return 'Password must contain at least one lowercase letter.'
+        if (!/[0-9]/.test(v)) return 'Password must contain at least one number.'
+        if (!/[^A-Za-z0-9]/.test(v)) return 'Password must contain at least one special character (@, #, !, etc.).'
+        return ''
+      }
+      case 'orgConfirmPass':
+        if (v !== extra.orgPassword) return 'Passwords do not match.'
+        return ''
+      case 'userConfirmPass':
+        if (v !== extra.userPassword) return 'Passwords do not match.'
+        return ''
+      case 'industry':
+        if (!v) return 'Please select an industry/sector.'
+        return ''
+      default:
+        return ''
+    }
+  }
+
+  // Clear a single field's error while user is typing
+  const clearFieldError = (key) => {
+    if (validationErrors[key]) {
+      setValidationErrors(prev => { const n = { ...prev }; delete n[key]; return n })
+    }
+  }
+
+  // Show error immediately when user leaves (blurs) a field
+  const handleBlur = (key, val, extra = {}) => {
+    const err = validateField(key, val, extra)
+    if (err) setValidationErrors(prev => ({ ...prev, [key]: err }))
+  }
+
   const handleOrgSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setValidationErrors({})
+
+    // Run all org-form validations
+    const fields = {
+      orgName, industry, contactEmail, adminName, phone,
+      orgPassword, orgConfirmPass,
+    }
     const errors = {}
-
-    if (!orgName.trim()) {
-      errors.orgName = 'Organization Name is required.'
-    }
-    if (!industry) {
-      errors.industry = 'Industry/Sector is required.'
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!contactEmail.trim()) {
-      errors.contactEmail = 'Primary contact email is required.'
-    } else if (!emailRegex.test(contactEmail)) {
-      errors.contactEmail = 'Please provide a valid work email address.'
-    }
-
-    if (!adminName.trim()) {
-      errors.adminName = 'Administrator name is required.'
-    } else {
-      const parts = adminName.trim().split(" ")
-      if (parts.length < 2) {
-        errors.adminName = 'Please provide both first and last name.'
-      }
-    }
-
-    const phoneClean = phone.replace(/[\s()-]/g, '')
-    const phoneRegex = /^\+?[0-9]{10,15}$/
-    if (phone && !phoneRegex.test(phoneClean)) {
-      errors.phone = 'Please enter a valid phone number (10-15 digits).'
-    }
-
-    if (!orgPassword) {
-      errors.orgPassword = 'Password is required.'
-    } else {
-      if (orgPassword.length < 8) {
-        errors.orgPassword = 'Password must be at least 8 characters.'
-      } else if (!/[A-Z]/.test(orgPassword)) {
-        errors.orgPassword = 'Password must contain at least one uppercase letter.'
-      } else if (!/[a-z]/.test(orgPassword)) {
-        errors.orgPassword = 'Password must contain at least one lowercase letter.'
-      } else if (!/[0-9]/.test(orgPassword)) {
-        errors.orgPassword = 'Password must contain at least one number.'
-      } else if (!/[^A-Za-z0-9]/.test(orgPassword)) {
-        errors.orgPassword = 'Password must contain at least one special character.'
-      }
-    }
-
-    if (orgPassword !== orgConfirmPass) {
-      errors.orgConfirmPass = 'Passwords do not match.'
-    }
+    Object.entries(fields).forEach(([key, val]) => {
+      const err = validateField(key, val, { orgPassword })
+      if (err) errors[key] = err
+    })
+    setValidationErrors(errors)
 
     if (!acceptTerms) {
-      setError('Please accept the Terms of Service.')
+      setError('You must accept the Terms of Service before registering.')
+      toast.error('Please accept the Terms of Service.')
       return
     }
-
     if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors)
-      toast.error('Please correct the validation errors below.')
+      toast.error('Please fix the highlighted errors before continuing.')
       return
     }
 
@@ -299,62 +342,35 @@ export default function SignupPage() {
   const handleUserSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setValidationErrors({})
-    const errors = {}
 
-    if (!fullName.trim()) {
-      errors.fullName = 'Full Name is required.'
+    // Run all user-form validations
+    const fields = {
+      fullName, userEmail, userPhone, userPassword, userConfirmPass,
+    }
+    const errors = {}
+    Object.entries(fields).forEach(([key, val]) => {
+      const err = validateField(key, val, { userPassword })
+      if (err) errors[key] = err
+    })
+
+    // org selection
+    if (!orgId) {
+      errors.orgId = 'Please select your organization.'
     } else {
-      const parts = fullName.trim().split(" ")
-      if (parts.length < 2) {
-        errors.fullName = 'Please provide both first and last name.'
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (typeof orgId === 'string' && orgId.length > 0 && !uuidRegex.test(orgId.trim())) {
+        errors.orgId = 'Invalid Organization ID format (must be a UUID like 550e8400-e29b-41d4-a716-446655440000).'
       }
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!userEmail.trim()) {
-      errors.userEmail = 'Work email is required.'
-    } else if (!emailRegex.test(userEmail)) {
-      errors.userEmail = 'Please provide a valid work email address.'
-    }
-
-    const phoneClean = userPhone.replace(/[\s()-]/g, '')
-    const phoneRegex = /^\+?[0-9]{10,15}$/
-    if (userPhone && !phoneRegex.test(phoneClean)) {
-      errors.userPhone = 'Please enter a valid phone number (10-15 digits).'
-    }
-
-    if (!orgId) {
-      errors.orgId = 'Please select your organization.'
-    }
-
+    // clearance code
     if (!clearanceCode.trim()) {
       errors.clearanceCode = 'Clearance code is required. Obtain it from your System Administrator.'
     }
 
-    if (!userPassword) {
-      errors.userPassword = 'Password is required.'
-    } else {
-      if (userPassword.length < 8) {
-        errors.userPassword = 'Password must be at least 8 characters.'
-      } else if (!/[A-Z]/.test(userPassword)) {
-        errors.userPassword = 'Password must contain at least one uppercase letter.'
-      } else if (!/[a-z]/.test(userPassword)) {
-        errors.userPassword = 'Password must contain at least one lowercase letter.'
-      } else if (!/[0-9]/.test(userPassword)) {
-        errors.userPassword = 'Password must contain at least one number.'
-      } else if (!/[^A-Za-z0-9]/.test(userPassword)) {
-        errors.userPassword = 'Password must contain at least one special character.'
-      }
-    }
-
-    if (userPassword !== userConfirmPass) {
-      errors.userConfirmPass = 'Passwords do not match.'
-    }
-
+    setValidationErrors(errors)
     if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors)
-      toast.error('Please correct the validation errors below.')
+      toast.error('Please fix the highlighted errors before continuing.')
       return
     }
 
@@ -529,7 +545,16 @@ export default function SignupPage() {
                   <p style={{ fontSize: 13, color: 'rgba(220,228,228,0.45)' }}>Set up your tenant and onboard your security team</p>
                 </div>
 
-                <InputField icon={Building2} label="Organization Name" placeholder="e.g. DataSafe Financial Solutions" value={orgName} onChange={e => setOrgName(e.target.value)} required error={validationErrors.orgName} />
+                <InputField icon={Building2} label="Organization Name" placeholder="e.g. DataSafe Financial Solutions" value={orgName}
+                  onChange={e => {
+                    const val = e.target.value
+                    setOrgName(val)
+                    // Validate in real-time — show error immediately as user types
+                    const err = validateField('orgName', val)
+                    setValidationErrors(prev => ({ ...prev, orgName: err || undefined }))
+                  }}
+                  onBlur={() => handleBlur('orgName', orgName)}
+                  required error={validationErrors.orgName} />
 
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(220,228,228,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'block', marginBottom: 7 }}>Industry / Sector</label>
@@ -543,11 +568,20 @@ export default function SignupPage() {
                   {validationErrors.industry && <span style={{ fontSize: 10, color: '#FF3366', marginTop: 4, display: 'block', fontWeight: 500 }}>{validationErrors.industry}</span>}
                 </div>
 
-                <InputField icon={Mail} label="Primary Contact Email" type="email" placeholder="contact@yourorganization.com" value={contactEmail} onChange={e => setContactEmail(e.target.value)} required error={validationErrors.contactEmail} />
+                <InputField icon={Mail} label="Primary Contact Email" type="text" placeholder="contact@yourorganization.com" value={contactEmail}
+                  onChange={e => { setContactEmail(e.target.value); clearFieldError('contactEmail') }}
+                  onBlur={() => handleBlur('contactEmail', contactEmail)}
+                  required error={validationErrors.contactEmail} />
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <InputField icon={User} label="Your Full Name (Admin)" placeholder="Full name" value={adminName} onChange={e => setAdminName(e.target.value)} required error={validationErrors.adminName} />
-                  <InputField icon={Phone} label="Phone Number" type="tel" placeholder="+91 98765 43210" value={phone} onChange={e => setPhone(e.target.value)} error={validationErrors.phone} />
+                  <InputField icon={User} label="Your Full Name (Admin)" placeholder="e.g. John Smith" value={adminName}
+                    onChange={e => { setAdminName(e.target.value); clearFieldError('adminName') }}
+                    onBlur={() => handleBlur('adminName', adminName)}
+                    required error={validationErrors.adminName} />
+                  <InputField icon={Phone} label="Phone Number" type="text" placeholder="+91 98765 43210" value={phone}
+                    onChange={e => { setPhone(e.target.value); clearFieldError('phone') }}
+                    onBlur={() => handleBlur('phone', phone)}
+                    error={validationErrors.phone} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -605,11 +639,21 @@ export default function SignupPage() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <InputField icon={User} label="Full Name" placeholder="Your full name" value={fullName} onChange={e => setFullName(e.target.value)} required error={validationErrors.fullName} />
-                  <InputField icon={Phone} label="Phone" type="tel" placeholder="+91 98765 43210" value={userPhone} onChange={e => setUserPhone(e.target.value)} error={validationErrors.userPhone} />
+                  <InputField icon={User} label="Full Name" placeholder="e.g. Jane Doe" value={fullName}
+                    onChange={e => { setFullName(e.target.value); clearFieldError('fullName') }}
+                    onBlur={() => handleBlur('fullName', fullName)}
+                    required error={validationErrors.fullName} />
+                  <InputField icon={Phone} label="Phone" type="text" placeholder="+91 98765 43210" value={userPhone}
+                    onChange={e => { setUserPhone(e.target.value); clearFieldError('userPhone') }}
+                    onBlur={() => handleBlur('userPhone', userPhone)}
+                    error={validationErrors.userPhone} />
                 </div>
 
-                <InputField icon={Mail} label="Work Email" type="email" placeholder="you@organization.com" value={userEmail} onChange={e => setUserEmail(e.target.value)} required error={validationErrors.userEmail} />
+                <InputField icon={Mail} label="Work Email" type="text" placeholder="you@organization.com" value={userEmail}
+                  onChange={e => { setUserEmail(e.target.value); clearFieldError('userEmail') }}
+                  onBlur={() => handleBlur('userEmail', userEmail)}
+                  required error={validationErrors.userEmail} />
+
 
                 {/* Role Selector */}
                 <div>
@@ -675,7 +719,9 @@ export default function SignupPage() {
                   </div>
                   {validationErrors.clearanceCode && <span style={{ fontSize: 10, color: '#FF3366', marginTop: 4, display: 'block', fontWeight: 500 }}>{validationErrors.clearanceCode}</span>}
                   <p className="mono" style={{ fontSize: 10, color: 'rgba(220,228,228,0.35)', marginTop: 8, lineHeight: 1.5 }}>
-                    Ask your System Administrator for this passcode. It prevents unauthorized public signups.
+                    {(selectedRole === 'ANALYST' || selectedRole === 'INVESTIGATOR')
+                       ? 'This is an org-level access passcode set by your admin — it is not a personal security credential. Ask your Org Manager or System Admin for this code.'
+                       : 'Privileged roles (System Admin, Org Manager) require a valid security clearance code set by the platform administrator.'}
                   </p>
                 </div>
 

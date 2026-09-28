@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Shield, Mail, ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Shield, Lock, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { authAPI } from '../../api'
 
 const styles = `
@@ -39,26 +39,52 @@ const styles = `
     background: linear-gradient(135deg, #00F5FF 0%, #00E676 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  @keyframes fpPulse { 0%,100%{ box-shadow: 0 0 8px #00E676; opacity:1; } 50%{ box-shadow: 0 0 2px #00E676; opacity:0.5; } }
-  .fp-pulse { animation: fpPulse 2s ease-in-out infinite; }
 `
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
+export default function ResetPasswordPage() {
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  
+  const navigate = useNavigate()
+  
+  // Parse token and uid from URL path
+  const { uid, token } = useParams()
+
+  useEffect(() => {
+    if (!uid || !token) {
+      setError('Invalid or missing reset token. Please request a new password reset link.')
+    }
+  }, [uid, token])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.')
+      return
+    }
+
     setLoading(true)
     try {
-      await authAPI.requestPasswordReset(email)
-      setSent(true)
+      await authAPI.confirmPasswordReset({
+        uid,
+        token,
+        new_password: password
+      })
+      setSuccess(true)
+      setTimeout(() => {
+        navigate('/login')
+      }, 3000)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send reset email. Please try again.')
+      setError(err.response?.data?.detail || 'Failed to reset password. The link might be expired.')
     } finally {
       setLoading(false)
     }
@@ -69,11 +95,9 @@ export default function ForgotPasswordPage() {
       <style>{styles}</style>
       <div className="fp-grid-bg" />
       <div style={{ minHeight: '100vh', background: '#0B0F1A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Inter, sans-serif' }}>
-        {/* Ambient glow */}
         <div style={{ position: 'fixed', top: '30%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 300, background: 'radial-gradient(circle, rgba(0,245,255,0.05) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
         <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
-          {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 48, justifyContent: 'center' }}>
             <div style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', borderRadius: 8, padding: 7 }}>
               <Shield size={20} style={{ color: '#00F5FF' }} />
@@ -82,59 +106,77 @@ export default function ForgotPasswordPage() {
           </Link>
 
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(16px)', borderRadius: 16, padding: 40 }}>
-            {!sent ? (
+            {!success ? (
               <>
-                {/* Lock icon */}
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
                   <div style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                    <Mail size={26} style={{ color: '#00F5FF' }} />
+                    <Lock size={26} style={{ color: '#00F5FF' }} />
                   </div>
-                  <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: 8 }}>Forgot Password?</h1>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: 8 }}>Set New Password</h1>
                   <p style={{ fontSize: 14, color: 'rgba(220,228,228,0.5)', lineHeight: 1.6 }}>
-                    Enter your registered work email and we'll send you a secure link to reset your password.
+                    Please enter your new password below.
                   </p>
                 </div>
 
                 {error && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.25)', borderRadius: 8, padding: '12px 16px', marginBottom: 20 }}>
                     <AlertTriangle size={15} style={{ color: '#FF3366', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: '#FF3366' }}>{error}</span>
+                    <span style={{ fontSize: 13, color: '#FF3366', lineHeight: 1.4 }}>{error}</span>
                   </div>
                 )}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(220,228,228,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Work Email</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(220,228,228,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>New Password</label>
                     <div style={{ position: 'relative' }}>
-                      <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(220,228,228,0.3)', pointerEvents: 'none' }} />
-                      <input className="fp-input" type="email" placeholder="you@organization.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                      <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(220,228,228,0.3)', pointerEvents: 'none' }} />
+                      <input 
+                        className="fp-input" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        required 
+                        disabled={!uid || !token || loading}
+                      />
                     </div>
                   </div>
-                  <button className="fp-btn" type="submit" disabled={loading}>
-                    {loading ? 'Sending Reset Link...' : 'Send Reset Link'}
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(220,228,228,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Confirm Password</label>
+                    <div style={{ position: 'relative' }}>
+                      <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(220,228,228,0.3)', pointerEvents: 'none' }} />
+                      <input 
+                        className="fp-input" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={confirmPassword} 
+                        onChange={e => setConfirmPassword(e.target.value)} 
+                        required 
+                        disabled={!uid || !token || loading}
+                      />
+                    </div>
+                  </div>
+                  <button className="fp-btn" type="submit" disabled={!uid || !token || loading} style={{ marginTop: 8 }}>
+                    {loading ? 'Resetting Password...' : 'Reset Password'}
                   </button>
                 </form>
               </>
             ) : (
-              /* Success State */
               <div style={{ textAlign: 'center' }}>
                 <div style={{ display: 'inline-flex', width: 72, height: 72, borderRadius: '50%', background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
                   <CheckCircle2 size={32} style={{ color: '#00E676' }} />
                 </div>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>Reset Link Sent!</h2>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>Success!</h2>
                 <p style={{ fontSize: 14, color: 'rgba(220,228,228,0.55)', lineHeight: 1.7, marginBottom: 28 }}>
-                  A password reset link has been sent to <br />
-                  <strong style={{ color: '#00F5FF' }}>{email}</strong>.<br /><br />
-                  Check your inbox and follow the instructions. The link expires in 30 minutes.
+                  Your password has been successfully reset.<br />
+                  Redirecting you to login...
                 </p>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00E676' }} className="fp-pulse" />
-                  <span className="mono" style={{ color: '#00E676', fontSize: 11, letterSpacing: '0.06em' }}>SECURE LINK DISPATCHED</span>
-                </div>
+                <Link to="/login" style={{ color: '#00F5FF', fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>
+                  Click here if not redirected
+                </Link>
               </div>
             )}
 
-            {/* Back to login */}
             <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
               <Link to="/login" style={{ color: 'rgba(220,228,228,0.5)', fontSize: 13, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#00F5FF'}
