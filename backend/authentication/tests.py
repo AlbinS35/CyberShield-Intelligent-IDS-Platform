@@ -106,7 +106,7 @@ class UserModelTest(TestCase):
     def test_password_is_hashed(self):
         """Raw password must NOT be stored — Django should hash it."""
         self.assertNotEqual(self.analyst.password, "SecurePass123!")
-        self.assertTrue(self.analyst.password.startswith("pbkdf2_"))
+        self.assertTrue(self.analyst.password.startswith("argon2"))
 
 
 class JWTLoginAPITest(TestCase):
