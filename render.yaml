@@ -1,5 +1,5 @@
 # =============================================================================
-# render.yaml — CyberShield IDS Platform Deployment Blueprint
+# render.yaml â€” CyberShield IDS Platform Deployment Blueprint
 # Defines: PostgreSQL DB, Django Backend, React Frontend
 # https://render.com/docs/blueprint-spec
 # =============================================================================
@@ -62,7 +62,7 @@ services:
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
     plan: free
-    region: oregon
+  
     routes:
       - type: rewrite
         source: /*
