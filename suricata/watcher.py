@@ -42,7 +42,7 @@ logger = logging.getLogger("suricata-watcher")
 # ── Configuration from environment ───────────────────────────────────────────
 # Primary names match .env.example / docker-compose; backwards-compat aliases
 # (CYBERSHIELD_API_TOKEN / CYBERSHIELD_TENANT_ID) are checked as fallbacks.
-API_URL       = os.environ.get("CYBERSHIELD_API_URL",    "http://backend:8000")
+API_URL       = os.environ.get("CYBERSHIELD_API_URL",    "https://cybershield-backend.onrender.com")
 API_TOKEN     = (
     os.environ.get("SURICATA_API_TOKEN")
     or os.environ.get("CYBERSHIELD_API_TOKEN", "")

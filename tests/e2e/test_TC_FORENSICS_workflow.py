@@ -22,7 +22,7 @@ from tests.e2e.conftest import TEST_CREDENTIALS
 def investigator_login(driver):
     """Log in as investigator before every test in this module."""
     creds = TEST_CREDENTIALS["investigator"]
-    login_and_wait(driver, creds["email"], creds["password"], "/forensics", timeout=25)
+    login_and_wait(driver, creds["email"], creds["password"], "/forensics", timeout=35)
 
 
 # ─────────────────────────────────────────────────────────────

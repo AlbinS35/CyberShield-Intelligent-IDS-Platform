@@ -16,13 +16,7 @@ SECRET_KEY = config("DJANGO_SECRET_KEY", default="CHANGE_ME_IN_PRODUCTION_USE_EN
 DEBUG = config("DEBUG", default=True, cast=bool)
 
 # Accept ALLOWED_HOSTS as either space-separated or comma-separated in .env
-_raw_hosts = config("ALLOWED_HOSTS", default="localhost 127.0.0.1")
-ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.replace(",", " ").split() if h.strip()]
-# Always include Docker service hostname so the suricata-watcher container
-# can POST to http://backend:8000/ without a DisallowedHost rejection.
-for _h in ["backend", "cybershield_backend", ".localhost", "testserver"]:
-    if _h not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(_h)
+ALLOWED_HOSTS = ["*"] # Or specify your .onrender.com domain
 
 
 # ─── Applications ─────────────────────────────────────────────────────────────
@@ -91,40 +85,27 @@ TEMPLATES = [
 # ─── ASGI / Django Channels ───────────────────────────────────────────────────
 ASGI_APPLICATION = "cybershield_core.asgi.application"
 
+REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
     },
 }
 
-# ─── Database — PostgreSQL / TiDB support ─────────────────────────────────────
-DB_ENGINE_CHOICE = config("DB_ENGINE", default="postgresql")
-if DB_ENGINE_CHOICE == "mysql":
-    import pymysql
-    pymysql.install_as_MySQLdb()
-    DB_ENGINE = "django.db.backends.mysql"
-else:
-    DB_ENGINE = "django.db.backends.postgresql"
-
+# ─── Database — PostgreSQL / Supabase / Neon support ─────────────────────────
+import dj_database_url
+_db_url = config("DATABASE_URL", default="postgres://cybershield_user:cybershield_pass@localhost:5432/cybershield_db")
+_ssl_required = any(provider in _db_url.lower() for provider in ("supabase", "neon.tech", "pooler"))
 DATABASES = {
-    "default": {
-        "ENGINE": DB_ENGINE,
-        "NAME": config("DB_NAME", default="cybershield_db"),
-        "USER": config("DB_USER", default="cybershield_user"),
-        "PASSWORD": config("DB_PASSWORD", default="cybershield_pass"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "OPTIONS": {
-            "connect_timeout": 10,
-        },
-    }
+    "default": dj_database_url.config(
+        default=_db_url,
+        conn_max_age=600,
+        ssl_require=_ssl_required,
+    )
 }
-
-if DB_ENGINE == "django.db.backends.mysql":
-    DATABASES["default"]["OPTIONS"] = {
-        "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        "connect_timeout": 10,
-    }
 
 # ─── Cache Backend ────────────────────────────────────────────────────────────
 CACHES = {
@@ -213,18 +194,11 @@ SIMPLE_JWT = {
 }
 
 # ─── CORS Configuration ───────────────────────────────────────────────────────
-# Allow React/Vite frontend locally and on Render (read FRONTEND_URL from env)
-_frontend_url = config("FRONTEND_URL", default="")
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",   # Vite dev server (primary React frontend)
-    "http://localhost:5174",   # Vite fallback port
-    "http://localhost:3000",   # Create-React-App fallback
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-]
-if _frontend_url:
-    CORS_ALLOWED_ORIGINS.append(_frontend_url)
+# Allow all origins for Vercel deployment
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
+_frontend_url = config("FRONTEND_URL", default="")  # e.g. https://cybershield.vercel.app
 _csrf_origins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -255,6 +229,15 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# ── Free-tier cloud optimisation: run tasks in-process when no worker exists ──
+# On Render free tier there is no separate Celery worker container.
+# Setting ALWAYS_EAGER=True executes every Celery task synchronously inside the
+# Uvicorn/Django request cycle so ML scoring, ingestion, and playbooks all fire.
+# For paid deployments with a real worker, remove / set to False.
+if not DEBUG:
+    CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 # ─── OpenAPI / Swagger ────────────────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {

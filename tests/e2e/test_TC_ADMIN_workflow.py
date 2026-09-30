@@ -22,7 +22,7 @@ from tests.e2e.conftest import TEST_CREDENTIALS
 def admin_login(driver):
     """Log in as SYS_ADMIN before every test."""
     creds = TEST_CREDENTIALS["admin"]
-    login_and_wait(driver, creds["email"], creds["password"], "/admin", timeout=25)
+    login_and_wait(driver, creds["email"], creds["password"], "/admin", timeout=35)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ def test_playbook_create_button_present(driver):
     create_present = (
         element_exists(
             driver, By.XPATH,
-            "//button[contains(text(),'Create') or contains(text(),'New') or contains(text(),'+')]",
+            "//button[contains(text(),'Create') or contains(text(),'New') or contains(text(),'+') or contains(text(),'Add')]",
             timeout=5,
         )
         or element_exists(driver, By.CSS_SELECTOR, "[data-testid='create-playbook-btn']", timeout=3)

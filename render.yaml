@@ -1,74 +1,30 @@
-# =============================================================================
-# render.yaml � CyberShield IDS Platform Deployment Blueprint
-# Defines: PostgreSQL DB, Django Backend, React Frontend
-# https://render.com/docs/blueprint-spec
-# =============================================================================
-
-databases:
-  - name: cybershield-db
-    databaseName: cybershield_db
-    user: cybershield_user
-    plan: free
-    region: oregon
+﻿# render.yaml — CyberShield Free-Tier Deployment
+# One Web Service (Uvicorn ASGI): REST + WebSockets + Celery eager mode
+# DB: External Supabase / Neon | Redis: External Upstash
 
 services:
-  # --- Django Backend (Web Service) ------------------------------------------
   - type: web
     name: cybershield-backend
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    plan: free
+    runtime: python
     region: oregon
-    healthCheckPath: /api/health/
+    plan: free
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: uvicorn cybershield_core.asgi:application --host 0.0.0.0 --port $PORT --workers 1
     envVars:
-      - key: DJANGO_SECRET_KEY
-        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DJANGO_SETTINGS_MODULE
+        value: cybershield_core.settings
       - key: DEBUG
         value: "False"
-      - key: ALLOWED_HOSTS
-        value: ".onrender.com"
-      - key: DB_NAME
-        fromDatabase:
-          name: cybershield-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: cybershield-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: cybershield-db
-          property: password
-      - key: DB_HOST
-        fromDatabase:
-          name: cybershield-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: cybershield-db
-          property: port
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
       - key: REDIS_URL
-        value: "redis://localhost:6379/0"
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://cybershield-frontend.onrender.com"
+        sync: false
       - key: FRONTEND_URL
-        value: "https://cybershield-frontend.onrender.com"
-
-  # --- React Frontend (Static Site) ------------------------------------------
-  - type: web
-    name: cybershield-frontend
-    runtime: static
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: ./frontend/dist
-    plan: free
-    region: oregon
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: "https://cybershield-backend.onrender.com"
-      - key: VITE_WS_URL
-        value: "wss://cybershield-backend.onrender.com"
+        sync: false
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "True"

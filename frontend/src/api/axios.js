@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Base Axios instance pointing to Django backend
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,
   withCredentials: true, // Crucial: automatically sends/receives httpOnly secure cookies

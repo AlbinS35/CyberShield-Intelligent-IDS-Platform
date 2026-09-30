@@ -21,8 +21,10 @@ export function SocketProvider({ children }) {
     if (!token) return
 
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const defaultWsUrl = `${wsProto}//${window.location.host}/ws`
+    const baseWsUrl = import.meta.env.VITE_WS_URL || defaultWsUrl
     const query = `?token=${encodeURIComponent(token)}`
-    const wsUrl = `${wsProto}//${window.location.host}/ws/alerts/${query}`
+    const wsUrl = `${baseWsUrl}/alerts/${query}`
 
     try {
       const ws = new WebSocket(wsUrl)

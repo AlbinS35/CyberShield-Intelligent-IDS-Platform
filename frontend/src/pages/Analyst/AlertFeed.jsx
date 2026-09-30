@@ -135,6 +135,7 @@ function AlertDrawer({ alert, onClose }) {
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/50" onClick={onClose} />
       <motion.div
+        data-testid="alert-detail"
         className="w-96 bg-navy-900 border-l border-cyber-cyan/20 flex flex-col overflow-y-auto"
         initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}

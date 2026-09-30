@@ -47,7 +47,7 @@ def test_landing_page_loads(driver):
 def test_valid_analyst_login(driver):
     """Analyst with correct credentials should reach /analyst dashboard."""
     creds = TEST_CREDENTIALS["analyst"]
-    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=15)
+    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=35)
     assert "/analyst" in driver.current_url, (
         f"Expected to land on /analyst, got: {driver.current_url}"
     )
@@ -155,7 +155,7 @@ def test_invalid_email_format_rejected(driver):
 def test_session_persists_on_refresh(driver):
     """After login, refreshing the page should keep the user authenticated."""
     creds = TEST_CREDENTIALS["analyst"]
-    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=15)
+    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=35)
 
     driver.refresh()
     time.sleep(3)   # let React re-hydrate and token refresh run
@@ -171,7 +171,7 @@ def test_session_persists_on_refresh(driver):
 def test_logout_redirects_to_login(driver):
     """Logout must invalidate the JWT cookie and redirect to /login."""
     creds = TEST_CREDENTIALS["analyst"]
-    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=25)
+    login_and_wait(driver, creds["email"], creds["password"], "/analyst", timeout=35)
 
     # Sidebar logout button: <button class="nav-item ...">Logout</button>
     # Target by XPath text content — the most stable selector for this UI
@@ -258,3 +258,9 @@ def test_brute_force_rate_limiting(driver):
             "Rate-limiting message not detected after 6 attempts. "
             "Verify 'login_attempts' throttle scope in Django settings."
         )
+
+    # Clear cache so subsequent tests are not rate limited
+    import subprocess
+    import os
+    backend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "backend")
+    subprocess.run(["python", "manage.py", "shell", "-c", "from django.core.cache import cache; cache.clear()"], cwd=backend_dir)

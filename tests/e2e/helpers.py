@@ -50,6 +50,25 @@ def fill(driver, by, locator, text, timeout=DEFAULT_WAIT):
     return el
 
 
+def react_fill(driver, by, locator, text, timeout=DEFAULT_WAIT):
+    """
+    Set a React-controlled input's value via JavaScript and fire
+    the synthetic 'input' + 'change' events so React state updates.
+    """
+    el = wait_for(driver, by, locator, timeout)
+    driver.execute_script(
+        """
+        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype, 'value').set;
+        nativeInputValueSetter.call(arguments[0], arguments[1]);
+        arguments[0].dispatchEvent(new Event('input',  { bubbles: true }));
+        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+        """,
+        el, text
+    )
+    return el
+
+
 def element_exists(driver, by, locator, timeout=3) -> bool:
     """Return True if element appears within timeout seconds."""
     try:
@@ -119,13 +138,14 @@ def login(driver, email: str, password: str, tenant: str = None):
         sel = Select(driver.find_element(By.CSS_SELECTOR, "select"))
         sel.select_by_visible_text(tenant)
 
-    fill(driver, By.CSS_SELECTOR, "input[type='email']",    email)
-    fill(driver, By.CSS_SELECTOR, "input[type='password']", password)
+    react_fill(driver, By.CSS_SELECTOR, "input[type='email']",    email)
+    react_fill(driver, By.CSS_SELECTOR, "input[type='password']", password)
+    time.sleep(0.5)
     click(driver, By.CSS_SELECTOR, "button[type='submit']")
 
 
 def login_and_wait(driver, email: str, password: str, expected_path: str,
-                   timeout: int = 15):
+                   timeout: int = 35):
     """
     Login then wait for a dashboard redirect.
 

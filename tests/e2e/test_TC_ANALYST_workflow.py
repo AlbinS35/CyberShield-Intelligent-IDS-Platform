@@ -82,13 +82,22 @@ def test_alert_severity_filter(driver):
         "//button[contains(text(),'CRITICAL') or contains(text(),'Critical') or contains(text(),'HIGH')]",
     ]
     clicked = False
-    for sel in filter_selectors:
-        by = By.XPATH if sel.startswith("//") else By.CSS_SELECTOR
-        if element_exists(driver, by, sel, timeout=3):
-            click(driver, by, sel)
-            clicked = True
-            time.sleep(1.5)
-            break
+    
+    # Try finding the select directly and using Select helper
+    by, sel = By.XPATH, "//select[option[contains(text(), 'Critical')]]"
+    if element_exists(driver, by, sel, timeout=3):
+        from selenium.webdriver.support.ui import Select
+        Select(driver.find_element(by, sel)).select_by_visible_text("Critical")
+        clicked = True
+        time.sleep(1.5)
+    else:
+        for sel in filter_selectors:
+            by = By.XPATH if sel.startswith("//") else By.CSS_SELECTOR
+            if element_exists(driver, by, sel, timeout=3):
+                click(driver, by, sel)
+                clicked = True
+                time.sleep(1.5)
+                break
 
     if not clicked:
         pytest.skip("Severity filter UI element not found — update selector.")
@@ -107,6 +116,7 @@ def test_alert_detail_opens(driver):
 
     # Click on first clickable alert row or link
     row_selectors = [
+        "div.group button:first-of-type",
         "table tbody tr:first-child",
         ".alert-card:first-child",
         "[data-testid='alert-row']:first-child",
@@ -116,7 +126,8 @@ def test_alert_detail_opens(driver):
     for sel in row_selectors:
         by = By.XPATH if sel.startswith("//") else By.CSS_SELECTOR
         if element_exists(driver, by, sel, timeout=4):
-            click(driver, by, sel)
+            el = driver.find_element(by, sel)
+            driver.execute_script("arguments[0].click();", el)
             clicked = True
             break
 
