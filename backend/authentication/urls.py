@@ -12,9 +12,17 @@ from .views import (
     GoogleLoginView,
     CookieTokenRefreshView,
     CookieTokenBlacklistView,
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
 )
 
 urlpatterns = [
+    # POST  /api/auth/password-reset/
+    path("password-reset/", PasswordResetRequestView.as_view(), name="password_reset_request"),
+
+    # POST  /api/auth/password-reset/confirm/
+    path("password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
+
     # POST  /api/auth/login/         → obtain access + refresh JWT pair
     path("login/", CyberShieldTokenObtainPairView.as_view(), name="token_obtain_pair"),
 

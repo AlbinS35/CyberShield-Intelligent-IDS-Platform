@@ -1,0 +1,30 @@
+﻿# render.yaml — CyberShield Free-Tier Deployment
+# One Web Service (Uvicorn ASGI): REST + WebSockets + Celery eager mode
+# DB: External Supabase / Neon | Redis: External Upstash
+
+services:
+  - type: web
+    name: cybershield-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: uvicorn cybershield_core.asgi:application --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DJANGO_SETTINGS_MODULE
+        value: cybershield_core.settings
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "True"

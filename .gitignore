@@ -60,3 +60,11 @@ docker-compose.override.yml
 # ─── Documentation Build Outputs ─────────────────────────────────────────────
 documentation/screenshots/*.png
 documentation/screenshots/*.jpg
+
+# ─── Test Artefacts (screenshots & HTML reports from E2E runs) ───────────────
+tests/e2e/screenshots/
+tests/reports/
+
+# ─── Misc / accidental files ──────────────────────────────────────────────────
+python
+backend/.env.production.example

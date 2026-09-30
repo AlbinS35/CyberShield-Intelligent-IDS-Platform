@@ -70,7 +70,7 @@ class CyberShieldTokenRefreshSerializer(TokenRefreshSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password  = serializers.CharField(write_only=True, min_length=6)
+    password  = serializers.CharField(write_only=True, min_length=8)
     full_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
     phone_no  = serializers.CharField(write_only=True, required=False, allow_blank=True)
     org_id    = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -83,13 +83,51 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ["email", "full_name", "phone_no", "password", "role", "org_id", "org_name", "industry", "clearance_code"]
 
     def validate(self, attrs):
+        import re
         role = attrs.get("role", "ANALYST")
         clearance_code = attrs.get("clearance_code", "")
         org_name = attrs.get("org_name", "").strip()
+        full_name = attrs.get("full_name", "").strip()
+        phone_no = attrs.get("phone_no", "").strip()
 
         if not role:
             attrs["role"] = "ANALYST"
             role = "ANALYST"
+
+        # — Organization Name: must contain at least one letter
+        if org_name:
+            if not re.search(r'[a-zA-Z]', org_name):
+                raise serializers.ValidationError(
+                    {"org_name": "Organization Name must contain letters, not just numbers or symbols."}
+                )
+            if len(org_name) < 2:
+                raise serializers.ValidationError(
+                    {"org_name": "Organization Name must be at least 2 characters."}
+                )
+
+        # — Full Name: must not contain digits; must have first + last name
+        if full_name:
+            if re.search(r'[0-9]', full_name):
+                raise serializers.ValidationError(
+                    {"full_name": "Name must contain only letters — no numbers allowed."}
+                )
+            if not re.match(r"^[a-zA-Z\s'\-]+$", full_name):
+                raise serializers.ValidationError(
+                    {"full_name": "Name must contain only letters, spaces, hyphens, or apostrophes."}
+                )
+            parts = full_name.split()
+            if len(parts) < 2:
+                raise serializers.ValidationError(
+                    {"full_name": "Please provide both first and last name."}
+                )
+
+        # — Phone: must not start with '-'; must start with + or digit
+        if phone_no:
+            phone_stripped = re.sub(r'[\s()]', '', phone_no)
+            if not re.match(r'^\+?[0-9][0-9\-]{9,14}$', phone_stripped):
+                raise serializers.ValidationError(
+                    {"phone_no": "Enter a valid phone number (10–15 digits). Use + for country code."}
+                )
 
         from decouple import config
         admin_clearance = config("CYBERSHIELD_ADMIN_CLEARANCE", default="SECURE_CYBER_SHIELD_2026")
@@ -110,6 +148,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"org_name": f"An organization named '{org_name}' already exists."})
 
         return attrs
+
 
     def create(self, validated_data):
         from django.utils.text import slugify
@@ -148,13 +187,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 contact_email=user.email,
             )
             user.tenant = tenant
-        # 2. Joining an existing org via org_id
         elif org_id:
             try:
                 tenant = Tenant.objects.get(pk=uuid.UUID(str(org_id)))
                 user.tenant = tenant
-            except Exception:
-                pass
+            except (ValueError, AttributeError):
+                raise serializers.ValidationError({"org_id": "Invalid Organization ID format. Please enter a valid UUID."})
+            except Tenant.DoesNotExist:
+                raise serializers.ValidationError({"org_id": "No organization found with that ID. Please check with your administrator."})
         # 3. Fallback to first existing tenant if available
         elif not user.tenant:
             first_tenant = Tenant.objects.first()
@@ -167,3 +207,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    token = serializers.CharField()
+    uid = serializers.CharField()

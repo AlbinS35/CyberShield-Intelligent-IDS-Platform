@@ -17,7 +17,7 @@ from .serializers import (
     UserRegistrationSerializer,
     TenantSerializer,
 )
-from .permissions import IsSuperAdmin
+from .permissions import IsSuperAdmin, IsSysAdmin
 
 
 from rest_framework.throttling import ScopedRateThrottle
@@ -99,7 +99,7 @@ class UserRegistrationView(generics.CreateAPIView):
 class TenantListView(generics.ListAPIView):
     """GET /api/auth/tenants/ — Public tenant list for login page selector."""
     serializer_class = TenantSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsSysAdmin]
     queryset = Tenant.objects.filter(is_active=True).order_by("name")
 
 
@@ -303,3 +303,71 @@ class CookieTokenBlacklistView(TokenBlacklistView):
         return response
 
 
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+from .serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+
+class PasswordResetRequestView(APIView):
+    """
+    POST /api/auth/password-reset/
+    Accepts an email, generates a token, and sends a password reset link.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"detail": "If the email is registered, a reset link has been sent."}, status=status.HTTP_200_OK)
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
+        
+        send_mail(
+            subject="CyberShield Password Reset Request",
+            message=f"Hello {user.first_name},\n\nYou requested a password reset. Please click the link below to set a new password:\n\n{reset_url}\n\nIf you did not request this, please ignore this email.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@cybershield.demo"),
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        return Response({"detail": "If the email is registered, a reset link has been sent."}, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    POST /api/auth/password-reset/confirm/
+    Accepts uid, token, and new_password to reset the user's password.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        uidb64 = serializer.validated_data["uid"]
+        token = serializer.validated_data["token"]
+        new_password = serializer.validated_data["new_password"]
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Invalid or expired reset token."}, status=status.HTTP_400_BAD_REQUEST)

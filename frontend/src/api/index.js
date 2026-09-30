@@ -8,6 +8,8 @@ export const authAPI = {
   tenants:     ()                 => api.get('/auth/tenants/'),
   register:    (data)             => api.post('/auth/register/',      data),
   googleLogin: (credential)       => api.post('/auth/google/',        { credential }),
+  requestPasswordReset: (email)   => api.post('/auth/password-reset/', { email }),
+  confirmPasswordReset: (data)    => api.post('/auth/password-reset/confirm/', data),
 }
 
 export const alertsAPI = {

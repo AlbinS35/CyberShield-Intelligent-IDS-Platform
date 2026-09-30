@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Mail, ArrowLeft, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { authAPI } from '../../api'
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
@@ -54,11 +55,10 @@ export default function ForgotPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      // Simulate password reset request (implement actual API call when endpoint is ready)
-      await new Promise(r => setTimeout(r, 1200))
+      await authAPI.requestPasswordReset(email)
       setSent(true)
-    } catch {
-      setError('Failed to send reset email. Please try again.')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send reset email. Please try again.')
     } finally {
       setLoading(false)
     }

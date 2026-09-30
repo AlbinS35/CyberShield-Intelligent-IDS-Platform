@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Wifi, WifiOff, X, AlertTriangle, Shield, Clock } from 'lucide-react'
+import { Bell, Wifi, WifiOff, X, AlertTriangle, Shield, Clock, ArrowLeft, Home } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { alertsAPI } from '../../api'
 import { format } from 'date-fns'
 import { clsx } from 'clsx'
+import { useNavigate } from 'react-router-dom'
 
 const SEV_STYLE = {
   CRITICAL: { cls: 'bg-red-500/15 text-red-400 border-red-500/30',    dot: 'bg-red-500' },
@@ -30,6 +31,7 @@ export default function TopBar({ isConnected }) {
   const [seenCount,  setSeenCount]  = useState(0)
   const notifRef  = useRef(null)
   const offlineRef = useRef(null)
+  const navigate = useNavigate()
 
   // Fetch recent alerts for notification panel
   const { data: alertsData } = useQuery({
@@ -64,8 +66,24 @@ export default function TopBar({ isConnected }) {
   return (
     <header className="h-14 shrink-0 px-6 flex items-center justify-between border-b border-cyber-cyan/10 bg-navy-950/80 backdrop-blur-sm relative z-40">
 
-      {/* Left: timestamp */}
-      <div className="flex items-center gap-2">
+      {/* Left: Navigation and timestamp */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 border-r border-navy-700 pr-4">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-navy-700/50 rounded transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => navigate('/')} 
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-navy-700/50 rounded transition-colors"
+            title="Go to Home/Landing Page"
+          >
+            <Home className="w-4 h-4" />
+          </button>
+        </div>
         <span className="text-xs text-gray-500 font-mono">
           {format(now, 'dd MMM yyyy — HH:mm:ss')}
         </span>

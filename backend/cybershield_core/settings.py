@@ -16,13 +16,7 @@ SECRET_KEY = config("DJANGO_SECRET_KEY", default="CHANGE_ME_IN_PRODUCTION_USE_EN
 DEBUG = config("DEBUG", default=True, cast=bool)
 
 # Accept ALLOWED_HOSTS as either space-separated or comma-separated in .env
-_raw_hosts = config("ALLOWED_HOSTS", default="localhost 127.0.0.1")
-ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.replace(",", " ").split() if h.strip()]
-# Always include Docker service hostname so the suricata-watcher container
-# can POST to http://backend:8000/ without a DisallowedHost rejection.
-for _h in ["backend", "cybershield_backend", ".localhost", "testserver"]:
-    if _h not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(_h)
+ALLOWED_HOSTS = ["*"] # Or specify your .onrender.com domain
 
 
 # ─── Applications ─────────────────────────────────────────────────────────────
@@ -59,6 +53,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ─── Middleware ───────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",      # Serve static files efficiently
     "corsheaders.middleware.CorsMiddleware",          # Must be before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -90,28 +85,26 @@ TEMPLATES = [
 # ─── ASGI / Django Channels ───────────────────────────────────────────────────
 ASGI_APPLICATION = "cybershield_core.asgi.application"
 
+REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(config("REDIS_HOST", default="127.0.0.1"), 6379)],
+            "hosts": [REDIS_URL],
         },
     },
 }
 
-# ─── Database — PostgreSQL with JSONB support ─────────────────────────────────
+# ─── Database — PostgreSQL / Supabase / Neon support ─────────────────────────
+import dj_database_url
+_db_url = config("DATABASE_URL", default="postgres://cybershield_user:cybershield_pass@localhost:5432/cybershield_db")
+_ssl_required = any(provider in _db_url.lower() for provider in ("supabase", "neon.tech", "pooler"))
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="cybershield_db"),
-        "USER": config("DB_USER", default="cybershield_user"),
-        "PASSWORD": config("DB_PASSWORD", default="cybershield_pass"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "OPTIONS": {
-            "connect_timeout": 10,
-        },
-    }
+    "default": dj_database_url.config(
+        default=_db_url,
+        conn_max_age=600,
+        ssl_require=_ssl_required,
+    )
 }
 
 # ─── Cache Backend ────────────────────────────────────────────────────────────
@@ -201,12 +194,20 @@ SIMPLE_JWT = {
 }
 
 # ─── CORS Configuration ───────────────────────────────────────────────────────
-# Allow React/Vite frontend (http://localhost:5173) and other local origins
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",   # Vite dev server (primary React frontend)
-    "http://localhost:3000",   # Create-React-App fallback
+# Allow all origins for Vercel deployment
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+_frontend_url = config("FRONTEND_URL", default="")  # e.g. https://cybershield.vercel.app
+_csrf_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
+if _frontend_url:
+    _csrf_origins.append(_frontend_url)
+CSRF_TRUSTED_ORIGINS = _csrf_origins
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -229,6 +230,15 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# ── Free-tier cloud optimisation: run tasks in-process when no worker exists ──
+# On Render free tier there is no separate Celery worker container.
+# Setting ALWAYS_EAGER=True executes every Celery task synchronously inside the
+# Uvicorn/Django request cycle so ML scoring, ingestion, and playbooks all fire.
+# For paid deployments with a real worker, remove / set to False.
+if not DEBUG:
+    CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+    CELERY_TASK_EAGER_PROPAGATES = True
+
 # ─── OpenAPI / Swagger ────────────────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {
     "TITLE": "CyberShield API",
@@ -245,8 +255,16 @@ SPECTACULAR_SETTINGS = {
 # ─── Static & Media ───────────────────────────────────────────────────────────
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ─── Production Security (enabled when DEBUG=False) ───────────────────────────
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = False   # Render handles SSL termination upstream
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # ─── Default primary key ─────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -256,3 +274,7 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
+
+# Email Configuration for Password Reset
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@cybershield.demo'
