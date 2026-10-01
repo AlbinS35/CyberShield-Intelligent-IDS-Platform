@@ -21,7 +21,9 @@ export function SocketProvider({ children }) {
     if (!token) return
 
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const defaultWsUrl = `${wsProto}//${window.location.host}/ws`
+    // Vercel does not support WebSocket proxying via vercel.json rewrites.
+    // We must connect directly to the Render backend.
+    const defaultWsUrl = 'wss://cybershield-backend-15ro.onrender.com/ws'
     const baseWsUrl = import.meta.env.VITE_WS_URL || defaultWsUrl
     const query = `?token=${encodeURIComponent(token)}`
     const wsUrl = `${baseWsUrl}/alerts/${query}`
