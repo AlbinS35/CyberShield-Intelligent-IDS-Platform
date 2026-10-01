@@ -20,7 +20,7 @@ from core.urls import (
 )
 
 def api_root(_request):
-    frontend_url = settings.CORS_ALLOWED_ORIGINS[-1] if settings.CORS_ALLOWED_ORIGINS else "http://127.0.0.1:5173"
+    frontend_url = getattr(settings, "CORS_ALLOWED_ORIGINS", ["http://127.0.0.1:5173"])[-1]
     return HttpResponseRedirect(frontend_url)
 
 
@@ -39,10 +39,21 @@ def health_check(_request):
     from django.http import JsonResponse
     return JsonResponse({"status": "ok", "db": db_status})
 
+
+def trigger_seed(_request):
+    """Temporary endpoint to forcefully run bootstrap_db.create_seed_data() on Render."""
+    try:
+        import bootstrap_db
+        bootstrap_db.create_seed_data()
+        return HttpResponse("Seed data generated successfully!", status=200)
+    except Exception as e:
+        return HttpResponse(f"Error seeding data: {e}", status=500)
+
 urlpatterns = [
     path("", api_root, name="api-root"),
     path("favicon.ico", favicon, name="favicon"),
     path("api/health/", health_check, name="health-check"),
+    path("api/seed/", trigger_seed, name="trigger-seed"),
 
     # ─── Django Admin ────────────────────────────────────────────────────────
     path("admin/", admin.site.urls),
