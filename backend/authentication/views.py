@@ -99,7 +99,7 @@ class UserRegistrationView(generics.CreateAPIView):
 class TenantListView(generics.ListAPIView):
     """GET /api/auth/tenants/ — Public tenant list for login page selector."""
     serializer_class = TenantSerializer
-    permission_classes = [IsSysAdmin]
+    permission_classes = [permissions.AllowAny]
     queryset = Tenant.objects.filter(is_active=True).order_by("name")
 
 
