@@ -237,7 +237,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # For paid deployments with a real worker, remove / set to False.
 if not DEBUG:
     CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
-    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_TASK_EAGER_PROPAGATES = False
 
 # ─── OpenAPI / Swagger ────────────────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {
