@@ -32,6 +32,10 @@ local_settings.py
 *.h5
 *.onnx
 
+# Allow the small NSL-KDD fallback models inside model_bin to be pushed to GitHub
+!backend/detection/core_ml/model_bin/rf_model.pkl
+!backend/detection/core_ml/model_bin/scaler.pkl
+
 # Dataset files (too large for repo)
 *.csv
 *.parquet
@@ -68,3 +72,5 @@ tests/reports/
 # ─── Misc / accidental files ──────────────────────────────────────────────────
 python
 backend/.env.production.example
+backend/test_redis.py
+backend/generate_dummy_model.py
