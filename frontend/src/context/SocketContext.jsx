@@ -23,8 +23,11 @@ export function SocketProvider({ children }) {
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     // Vercel does not support WebSocket proxying via vercel.json rewrites.
     // We must connect directly to the Render backend.
-    const defaultWsUrl = 'wss://cybershield-backend-15ro.onrender.com/ws'
-    const baseWsUrl = import.meta.env.VITE_WS_URL || defaultWsUrl
+    // VITE_WS_URL should be set to: wss://cybershield-backend-15ro.onrender.com
+    // The /ws prefix is added here, and /alerts/ is appended below.
+    const rawWsBase = import.meta.env.VITE_WS_URL || 'wss://cybershield-backend-15ro.onrender.com'
+    // Strip trailing slash and ensure /ws prefix exists
+    const baseWsUrl = rawWsBase.replace(/\/$/, '').replace(/\/ws$/, '') + '/ws'
     const query = `?token=${encodeURIComponent(token)}`
     const wsUrl = `${baseWsUrl}/alerts/${query}`
 

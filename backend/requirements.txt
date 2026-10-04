@@ -16,6 +16,7 @@ drf-spectacular==0.27.*
 # ─── WebSocket / Real-time ────────────────────────────────
 channels==4.1.*
 channels-redis==4.2.*
+websockets>=12.0          # Required by uvicorn for WebSocket protocol support
 
 # ─── Background Tasks ─────────────────────────────────────
 celery==5.3.*
@@ -33,7 +34,7 @@ cryptography==42.*
 argon2-cffi==25.1.*
 
 # ─── Machine Learning ─────────────────────────────────────
-scikit-learn==1.9.*
+scikit-learn==1.9.0       # Pinned to match saved rf_model.pkl version
 numpy==1.26.*
 pandas==2.2.*
 joblib>=1.4.0
@@ -49,7 +50,7 @@ urllib3==2.2.*
 Pillow==10.2.*
 
 # ─── Production ASGI Server ───────────────────────────────
-uvicorn>=0.29.0
+uvicorn[standard]>=0.29.0  # [standard] includes websockets + httptools
 gunicorn>=22.0.0
 daphne==4.1.*
 
