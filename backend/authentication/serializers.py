@@ -187,6 +187,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 contact_email=user.email,
             )
             user.tenant = tenant
+            
+            # Auto-create legacy core.Organization
+            from core.models import Organization
+            Organization.objects.get_or_create(
+                org_name=tenant.name,
+                defaults={"domain_name": f"{tenant.slug}.local"}
+            )
         elif org_id:
             try:
                 tenant = Tenant.objects.get(pk=uuid.UUID(str(org_id)))
