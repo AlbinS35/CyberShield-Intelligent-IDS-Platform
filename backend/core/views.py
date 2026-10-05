@@ -135,15 +135,22 @@ class OrganizationDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class CoreUserListView(generics.ListCreateAPIView):
     """
-    GET  /api/core/users/  → list users
-    POST /api/core/users/  → create a new CoreUser
+    GET  /api/core/users/  → list users (filtered by tenant)
+    POST /api/core/users/  → create a new CoreUser (disabled/handled via auth)
     """
-    serializer_class   = CoreUserSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields   = ["org"]
-    search_fields      = ["full_name", "phone_no"]
-    queryset           = CoreUser.objects.select_related("org").all()
+    filter_backends    = [filters.SearchFilter]
+    search_fields      = ["first_name", "last_name", "email"]
+
+    def get_queryset(self):
+        from authentication.models import User as AuthUser
+        if hasattr(self.request.user, 'tenant') and self.request.user.tenant:
+            return AuthUser.objects.filter(tenant=self.request.user.tenant)
+        return AuthUser.objects.none()
+
+    def get_serializer_class(self):
+        from .serializers import AuthUserCoreUserSerializer
+        return AuthUserCoreUserSerializer
 
 
 class CoreUserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -175,10 +182,34 @@ class LoginListView(generics.ListCreateAPIView):
 
     def get_serializer_class(self):
         from .serializers import AuthUserLoginSerializer
-        # We can just reuse AuthUserLoginSerializer for both for now to fix the view
-        # or keep LoginCreateSerializer if they still rely on tbl_login POST.
-        # But for now, just return AuthUserLoginSerializer for GET.
         return AuthUserLoginSerializer
+        
+    def create(self, request, *args, **kwargs):
+        # The frontend sends {user: uuid, email: str, password: str, role: str, status: str}
+        # Instead of creating a new legacy Login, we update the existing AuthUser.
+        from authentication.models import User as AuthUser
+        user_id = request.data.get("user")
+        if not user_id:
+            return Response({"error": "User profile ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            auth_user = AuthUser.objects.get(id=user_id, tenant=request.user.tenant)
+        except AuthUser.DoesNotExist:
+            return Response({"error": "User profile not found in your organization."}, status=status.HTTP_404_NOT_FOUND)
+            
+        auth_user.email = request.data.get("email", auth_user.email)
+        auth_user.role = request.data.get("role", auth_user.role)
+        is_active = request.data.get("status") == "ACTIVE"
+        auth_user.is_active = is_active
+        
+        password = request.data.get("password")
+        if password:
+            auth_user.set_password(password)
+            
+        auth_user.save()
+        
+        serializer = self.get_serializer(auth_user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
