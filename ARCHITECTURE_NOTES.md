@@ -36,3 +36,15 @@ We implemented the following bridges:
 
 *   **Clearance Code:** 
     *   In `backend/authentication/serializers.py`, the `admin_clearance` check for privileged roles (`SYS_ADMIN`, `ORG_MANAGER`) is currently commented out for demo/testing purposes. *This should be reverted before production deployment.*
+
+## 4. API Rate Limiting (429 Errors)
+
+*   **DRF Throttling:** 
+    *   Because the frontend polling mechanisms (React Query `refetchInterval`) run every 3-5 seconds (as a fallback when WebSockets fail), the default DRF `UserRateThrottle` limit of `1000/day` was being exhausted in ~15-20 minutes, causing `429 Too Many Requests`.
+    *   **Fix:** In `backend/cybershield_core/settings.py`, `"user": "100000/day"` was set to accommodate aggressive frontend polling for demo purposes.
+
+## 5. Simulating Playbook Triggers (Demo Guide)
+
+*   **Console Fetch vs React UI:** 
+    *   Attempting to use raw `fetch()` calls in the browser console for `/api/ingestion/suricata/` caused a **500 Internal Server Error** because the bare JS fetch omits backend-required multi-tenant headers (`tenant_id`) and CSRF/Session configurations.
+    *   **The Recommended Approach:** To simulate an attack (e.g., a SYN Flood) and trigger the ML Detection -> Automated Playbook (Block IP) pipeline without Suricata/Wazuh, add a dedicated "Simulate Threat" button to the React UI (e.g., in `PlaybookManager.jsx`). This ensures the app's `axios` instance correctly attaches all JWT authentication and tenant headers.
