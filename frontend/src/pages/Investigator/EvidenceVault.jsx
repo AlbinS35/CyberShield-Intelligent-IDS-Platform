@@ -175,6 +175,7 @@ export default function EvidenceVault() {
   const handleUpload = async (files) => {
     if (!files[0] || !caseId || !title) {
       toast.error('Please select a case, enter a title, and choose a file.')
+      if (fileRef.current) fileRef.current.value = ''
       return
     }
     const formData = new FormData()
@@ -194,6 +195,7 @@ export default function EvidenceVault() {
       toast.error('Upload failed. Check your connection.')
     } finally {
       setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
