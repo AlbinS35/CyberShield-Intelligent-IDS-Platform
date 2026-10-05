@@ -95,6 +95,24 @@ class LoginCreateSerializer(serializers.ModelSerializer):
         login.save()
         return login
 
+from authentication.models import User as AuthUser
+class AuthUserLoginSerializer(serializers.ModelSerializer):
+    login_id = serializers.UUIDField(source='id', read_only=True)
+    user = serializers.UUIDField(source='id', read_only=True)
+    user_name = serializers.SerializerMethodField()
+    org_name = serializers.CharField(source='tenant.name', read_only=True)
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuthUser
+        fields = ['login_id', 'user', 'user_name', 'org_name', 'email', 'role', 'status']
+    
+    def get_user_name(self, obj):
+        return obj.get_full_name()
+        
+    def get_status(self, obj):
+        return "ACTIVE" if obj.is_active else "INACTIVE"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. JWT Token — Login via tbl_login credentials
