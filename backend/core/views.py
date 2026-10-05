@@ -104,7 +104,17 @@ class OrganizationListView(generics.ListCreateAPIView):
     search_fields      = ["org_name", "domain_name"]
     ordering_fields    = ["org_name", "created_at"]
     ordering           = ["org_name"]
-    queryset           = Organization.objects.all()
+
+    def get_queryset(self):
+        if hasattr(self.request.user, "tenant") and self.request.user.tenant:
+            tenant = self.request.user.tenant
+            # Auto-create the core Organization if it doesn't exist so legacy endpoints work
+            Organization.objects.get_or_create(
+                org_name=tenant.name,
+                defaults={"domain_name": f"{tenant.slug}.local"}
+            )
+            return Organization.objects.filter(org_name=tenant.name)
+        return Organization.objects.none()
 
 
 class OrganizationDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -149,19 +159,26 @@ class CoreUserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class LoginListView(generics.ListCreateAPIView):
     """
-    GET  /api/core/logins/  → list all login records (admin use)
-    POST /api/core/logins/  → create login credentials for an existing CoreUser
+    GET  /api/core/logins/  → list all user records (filtered by tenant)
+    POST /api/core/logins/  → create login credentials for an existing User
     """
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields   = ["role", "status"]
-    search_fields      = ["email"]
-    queryset           = Login.objects.select_related("user__org").all()
+    filter_backends    = [filters.SearchFilter]
+    search_fields      = ["email", "role"]
+
+    def get_queryset(self):
+        from authentication.models import User as AuthUser
+        if hasattr(self.request.user, 'tenant') and self.request.user.tenant:
+            return AuthUser.objects.filter(tenant=self.request.user.tenant)
+        # Fallback if no tenant
+        return AuthUser.objects.none()
 
     def get_serializer_class(self):
-        if self.request.method == "POST":
-            return LoginCreateSerializer
-        return LoginSerializer
+        from .serializers import AuthUserLoginSerializer
+        # We can just reuse AuthUserLoginSerializer for both for now to fix the view
+        # or keep LoginCreateSerializer if they still rely on tbl_login POST.
+        # But for now, just return AuthUserLoginSerializer for GET.
+        return AuthUserLoginSerializer
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -285,7 +302,11 @@ class AssetListCreateView(generics.ListCreateAPIView):
     search_fields      = ["asset_name", "ip_address", "wazuh_agent_id"]
     ordering_fields    = ["asset_name", "ip_address", "status"]
     ordering           = ["asset_name"]
-    queryset           = NetworkAsset.objects.select_related("org").all()
+
+    def get_queryset(self):
+        if hasattr(self.request.user, "tenant") and self.request.user.tenant:
+            return NetworkAsset.objects.select_related("org").filter(org__org_name=self.request.user.tenant.name)
+        return NetworkAsset.objects.none()
 
 
 class AssetDetailView(generics.RetrieveUpdateDestroyAPIView):

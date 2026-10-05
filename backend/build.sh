@@ -14,4 +14,7 @@ python manage.py migrate --no-input
 echo "📂 Collecting static files…"
 python manage.py collectstatic --no-input --clear
 
+echo "🌱 Seeding the database with demo users…"
+python -c "import bootstrap_db; bootstrap_db.create_seed_data()"
+
 echo "✅ Build complete — ready to start Uvicorn ASGI server."
