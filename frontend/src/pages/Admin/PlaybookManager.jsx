@@ -10,6 +10,7 @@ import axios from '../../api/axios' // direct fetch helper for execution audits
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 import { format } from 'date-fns'
+import { useAuth } from '../../context/AuthContext'
 
 const SEVERITY_COLORS = {
   CRITICAL: 'text-red-400 bg-red-500/10 border-red-500/20',
@@ -20,6 +21,7 @@ const SEVERITY_COLORS = {
 }
 
 export default function PlaybookManager() {
+  const { user: currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState('playbooks') // 'playbooks', 'blocklist', 'executions', 'users', 'rules'
   const [showPlaybookModal, setShowPlaybookModal] = useState(false)
   const [editingPlaybook, setEditingPlaybook] = useState(null)
@@ -33,7 +35,7 @@ export default function PlaybookManager() {
 
   // User management states
   const [showUserModal, setShowUserModal] = useState(false)
-  const [userForm, setUserForm] = useState({ email: '', role: 'Analyst', status: 'ACTIVE', user: '' })
+  const [userForm, setUserForm] = useState({ email: '', password: '', role: 'Analyst', status: 'ACTIVE', user: '' })
   const [savingUser, setSavingUser] = useState(false)
 
   // Execution detailed log modal
@@ -87,18 +89,33 @@ export default function PlaybookManager() {
       await axios.post('/core/logins/', {
         user: userForm.user,
         email: userForm.email,
-        password: 'TemporaryPassword@2024',
+        password: userForm.password || 'TemporaryPassword@2024',
         role: userForm.role,
         status: userForm.status
       })
-      toast.success('User credentials created successfully! Default password: TemporaryPassword@2024')
+      toast.success('User credentials created successfully!')
       setShowUserModal(false)
-      setUserForm({ email: '', role: 'Analyst', status: 'ACTIVE', user: '' })
+      setUserForm({ email: '', password: '', role: 'Analyst', status: 'ACTIVE', user: '' })
       refetchUsers()
     } catch (err) {
       toast.error(err.response?.data ? JSON.stringify(err.response.data) : 'Failed to register user credentials')
     } finally {
       setSavingUser(false)
+    }
+  }
+
+  const handleEditUser = (u) => {
+    toast.error("Edit user functionality coming soon.")
+  }
+
+  const handleDeleteUser = async (login_id) => {
+    if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return
+    try {
+      await axios.delete(`/core/logins/${login_id}/`)
+      toast.success("User deleted successfully.")
+      refetchUsers()
+    } catch (err) {
+      toast.error("Failed to delete user.")
     }
   }
 
@@ -466,18 +483,19 @@ export default function PlaybookManager() {
                   <th className="p-4">Role</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Organization</th>
+                  <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-800/50">
                 {usersLoading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan="5" className="p-4 h-12 bg-navy-800/10" />
+                      <td colSpan="6" className="p-4 h-12 bg-navy-800/10" />
                     </tr>
                   ))
                 ) : users?.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-gray-600">
+                    <td colSpan="6" className="p-8 text-center text-gray-600">
                       No user accounts registered.
                     </td>
                   </tr>
@@ -502,6 +520,20 @@ export default function PlaybookManager() {
                         </span>
                       </td>
                       <td className="p-4 text-gray-500">{u.org_name}</td>
+                      <td className="p-4 flex items-center justify-end gap-2">
+                        {u.email !== currentUser?.email ? (
+                          <>
+                            <button onClick={() => handleEditUser(u)} className="p-1.5 hover:bg-navy-700 rounded text-gray-400 hover:text-cyber-cyan transition-colors" title="Edit User">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteUser(u.login_id)} className="p-1.5 hover:bg-navy-700 rounded text-gray-400 hover:text-cyber-red transition-colors" title="Delete User">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-gray-600 text-[10px] uppercase font-bold tracking-widest mr-2">You</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -587,6 +619,18 @@ export default function PlaybookManager() {
                     value={userForm.email}
                     onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))}
                     placeholder="user@organization.local"
+                    className="cyber-input w-full text-xs"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-gray-500 mb-1 font-semibold">Password</label>
+                  <input
+                    type="text"
+                    value={userForm.password}
+                    onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))}
+                    placeholder="Enter password (default: TemporaryPassword@2024)"
                     className="cyber-input w-full text-xs"
                     required
                   />
