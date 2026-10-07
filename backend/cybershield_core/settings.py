@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ─── Security ────────────────────────────────────────────────────────────────
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR")
-DEBUG = config("DEBUG", default=True, cast=bool)
+DEBUG = True
 
 # Accept ALLOWED_HOSTS as either space-separated or comma-separated in .env
 ALLOWED_HOSTS = ["*"] # Or specify your .onrender.com domain
