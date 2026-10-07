@@ -222,8 +222,8 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ─── Celery ───────────────────────────────────────────────────────────────────
-CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = config("REDIS_URL", default="redis://localhost:6379/0")
+_celery_redis_url = config("REDIS_URL", default="redis://localhost:6379/0")`nif _celery_redis_url.startswith("rediss://") and "?" not in _celery_redis_url:`n    _celery_redis_url += "?ssl_cert_reqs=CERT_NONE"`n`nCELERY_BROKER_URL = _celery_redis_url
+CELERY_RESULT_BACKEND = _celery_redis_url
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -277,3 +277,4 @@ USE_TZ = True
 # Email Configuration for Password Reset
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@cybershield.demo'
+
