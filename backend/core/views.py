@@ -104,7 +104,17 @@ class OrganizationListView(generics.ListCreateAPIView):
     search_fields      = ["org_name", "domain_name"]
     ordering_fields    = ["org_name", "created_at"]
     ordering           = ["org_name"]
-    queryset           = Organization.objects.all()
+
+    def get_queryset(self):
+        if hasattr(self.request.user, "tenant") and self.request.user.tenant:
+            tenant = self.request.user.tenant
+            # Auto-create the core Organization if it doesn't exist so legacy endpoints work
+            Organization.objects.get_or_create(
+                org_name=tenant.name,
+                defaults={"domain_name": f"{tenant.slug}.local"}
+            )
+            return Organization.objects.filter(org_name=tenant.name)
+        return Organization.objects.none()
 
 
 class OrganizationDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -125,15 +135,22 @@ class OrganizationDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class CoreUserListView(generics.ListCreateAPIView):
     """
-    GET  /api/core/users/  → list users
-    POST /api/core/users/  → create a new CoreUser
+    GET  /api/core/users/  → list users (filtered by tenant)
+    POST /api/core/users/  → create a new CoreUser (disabled/handled via auth)
     """
-    serializer_class   = CoreUserSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields   = ["org"]
-    search_fields      = ["full_name", "phone_no"]
-    queryset           = CoreUser.objects.select_related("org").all()
+    filter_backends    = [filters.SearchFilter]
+    search_fields      = ["first_name", "last_name", "email"]
+
+    def get_queryset(self):
+        from authentication.models import User as AuthUser
+        if hasattr(self.request.user, 'tenant') and self.request.user.tenant:
+            return AuthUser.objects.filter(tenant=self.request.user.tenant)
+        return AuthUser.objects.none()
+
+    def get_serializer_class(self):
+        from .serializers import AuthUserCoreUserSerializer
+        return AuthUserCoreUserSerializer
 
 
 class CoreUserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -149,19 +166,50 @@ class CoreUserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class LoginListView(generics.ListCreateAPIView):
     """
-    GET  /api/core/logins/  → list all login records (admin use)
-    POST /api/core/logins/  → create login credentials for an existing CoreUser
+    GET  /api/core/logins/  → list all user records (filtered by tenant)
+    POST /api/core/logins/  → create login credentials for an existing User
     """
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields   = ["role", "status"]
-    search_fields      = ["email"]
-    queryset           = Login.objects.select_related("user__org").all()
+    filter_backends    = [filters.SearchFilter]
+    search_fields      = ["email", "role"]
+
+    def get_queryset(self):
+        from authentication.models import User as AuthUser
+        if hasattr(self.request.user, 'tenant') and self.request.user.tenant:
+            return AuthUser.objects.filter(tenant=self.request.user.tenant)
+        # Fallback if no tenant
+        return AuthUser.objects.none()
 
     def get_serializer_class(self):
-        if self.request.method == "POST":
-            return LoginCreateSerializer
-        return LoginSerializer
+        from .serializers import AuthUserLoginSerializer
+        return AuthUserLoginSerializer
+        
+    def create(self, request, *args, **kwargs):
+        # The frontend sends {user: uuid, email: str, password: str, role: str, status: str}
+        # Instead of creating a new legacy Login, we update the existing AuthUser.
+        from authentication.models import User as AuthUser
+        user_id = request.data.get("user")
+        if not user_id:
+            return Response({"error": "User profile ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            auth_user = AuthUser.objects.get(id=user_id, tenant=request.user.tenant)
+        except AuthUser.DoesNotExist:
+            return Response({"error": "User profile not found in your organization."}, status=status.HTTP_404_NOT_FOUND)
+            
+        auth_user.email = request.data.get("email", auth_user.email)
+        auth_user.role = request.data.get("role", auth_user.role)
+        is_active = request.data.get("status") == "ACTIVE"
+        auth_user.is_active = is_active
+        
+        password = request.data.get("password")
+        if password:
+            auth_user.set_password(password)
+            
+        auth_user.save()
+        
+        serializer = self.get_serializer(auth_user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -285,7 +333,11 @@ class AssetListCreateView(generics.ListCreateAPIView):
     search_fields      = ["asset_name", "ip_address", "wazuh_agent_id"]
     ordering_fields    = ["asset_name", "ip_address", "status"]
     ordering           = ["asset_name"]
-    queryset           = NetworkAsset.objects.select_related("org").all()
+
+    def get_queryset(self):
+        if hasattr(self.request.user, "tenant") and self.request.user.tenant:
+            return NetworkAsset.objects.select_related("org").filter(org__org_name=self.request.user.tenant.name)
+        return NetworkAsset.objects.none()
 
 
 class AssetDetailView(generics.RetrieveUpdateDestroyAPIView):

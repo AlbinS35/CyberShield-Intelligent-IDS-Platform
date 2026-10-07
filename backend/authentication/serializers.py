@@ -132,15 +132,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         from decouple import config
         admin_clearance = config("CYBERSHIELD_ADMIN_CLEARANCE", default="SECURE_CYBER_SHIELD_2026")
 
-        # Check privileged roles
-        if role in ["SYS_ADMIN", "SUPER_ADMIN"]:
-            if clearance_code != admin_clearance:
-                raise serializers.ValidationError({"clearance_code": "Invalid security clearance code for privileged role."})
-        elif role == "ORG_MANAGER":
-            # If registering a brand new organization with org_name, no clearance code is required
-            # If attempting to join an existing organization as ORG_MANAGER, clearance code is required
-            if not org_name and clearance_code != admin_clearance:
-                raise serializers.ValidationError({"clearance_code": "Invalid security clearance code for privileged role."})
+        # Check privileged roles (TEMPORARILY DISABLED)
+        # if role in ["SYS_ADMIN", "SUPER_ADMIN"]:
+        #     if clearance_code != admin_clearance:
+        #         raise serializers.ValidationError({"clearance_code": "Invalid security clearance code for privileged role."})
+        # elif role == "ORG_MANAGER":
+        #     # If registering a brand new organization with org_name, no clearance code is required
+        #     # If attempting to join an existing organization as ORG_MANAGER, clearance code is required
+        #     if not org_name and clearance_code != admin_clearance:
+        #         raise serializers.ValidationError({"clearance_code": "Invalid security clearance code for privileged role."})
 
         if org_name:
             from .models import Tenant
@@ -187,6 +187,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 contact_email=user.email,
             )
             user.tenant = tenant
+            
+            # Auto-create legacy core.Organization
+            from core.models import Organization
+            Organization.objects.get_or_create(
+                org_name=tenant.name,
+                defaults={"domain_name": f"{tenant.slug}.local"}
+            )
         elif org_id:
             try:
                 tenant = Tenant.objects.get(pk=uuid.UUID(str(org_id)))

@@ -155,40 +155,40 @@ def create_seed_data() -> None:
     import django
     django.setup()
 
-    from core.models import Organization, CoreUser, Login
+    from authentication.models import Tenant, User
 
-    # Organization
-    org, created = Organization.objects.get_or_create(
-        org_name="CyberShield Demo Bank",
-        defaults={"domain_name": "cybershield-demo.local", "status": "ACTIVE"},
+    tenant, created = Tenant.objects.get_or_create(
+        name="CyberShield Demo Bank",
+        defaults={"slug": "cybershield-demo", "industry": "Banking", "is_active": True},
     )
-    print(f"  Organization: {org.org_name} ({'created' if created else 'exists'})")
+    print(f"  Tenant: {tenant.name} ({'created' if created else 'exists'})")
 
     # Login credential for each role
     demo_accounts = [
-        ("analyst@cybershield.demo",      "Analyst",      "CyberShield@2024", "Demo Analyst"),
-        ("investigator@cybershield.demo", "Investigator", "CyberShield@2024", "Demo Investigator"),
-        ("admin@cybershield.demo",        "Admin",        "CyberShield@2024", "Demo Admin"),
-        ("manager@cybershield.demo",      "Management",   "CyberShield@2024", "Demo Manager"),
+        ("analyst@cybershield.demo",      User.Role.ANALYST,      "CyberShield@2024", "Demo", "Analyst"),
+        ("investigator@cybershield.demo", User.Role.INVESTIGATOR, "CyberShield@2024", "Demo", "Investigator"),
+        ("admin@cybershield.demo",        User.Role.SYS_ADMIN,    "CyberShield@2024", "Demo", "Admin"),
+        ("manager@cybershield.demo",      User.Role.ORG_MANAGER,  "CyberShield@2024", "Demo", "Manager"),
     ]
 
-    for email, role, password, name in demo_accounts:
-        # Create unique CoreUser for each Login role
-        u_user, _ = CoreUser.objects.get_or_create(
-            full_name=name,
-            defaults={"phone_no": "9999999999", "org": org},
-        )
-        login, created = Login.objects.get_or_create(
+    for email, role, password, first_name, last_name in demo_accounts:
+        user, created = User.objects.get_or_create(
             email=email,
-            defaults={"user": u_user, "role": role, "status": "ACTIVE"},
+            defaults={"first_name": first_name, "last_name": last_name, "tenant": tenant, "role": role},
         )
         if created:
-            login.set_password(password)
-            login.save()
-        print(f"  Login: {email} [{role}] ({'created' if created else 'exists'})")
+            user.set_password(password)
+            user.save()
+        # Also update password if user exists to ensure it matches the demo password
+        elif not user.check_password(password):
+            user.set_password(password)
+            user.save()
+            print(f"  User: {email} [{role}] (password updated)")
+            
+        print(f"  User: {email} [{role}] ({'created' if created else 'exists'})")
 
     print("\n[OK] Seed data created.")
-    print("   Login at POST /api/core/auth/login/ with any of the above emails")
+    print("   Login at POST /api/auth/login/ with any of the above emails")
     print("   and password: CyberShield@2024")
 
 

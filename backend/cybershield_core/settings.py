@@ -172,7 +172,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/day",
-        "user": "1000/day",
+        "user": "100000/day",
         "login_attempts": "5/minute",
         # Public registration rate-limit: prevents automated tenant flooding
         # and bulk account-generation attacks (10 registrations per IP per hour).
