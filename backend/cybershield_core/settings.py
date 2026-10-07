@@ -222,7 +222,10 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ─── Celery ───────────────────────────────────────────────────────────────────
-_celery_redis_url = config("REDIS_URL", default="redis://localhost:6379/0")`nif _celery_redis_url.startswith("rediss://") and "?" not in _celery_redis_url:`n    _celery_redis_url += "?ssl_cert_reqs=CERT_NONE"`n`nCELERY_BROKER_URL = _celery_redis_url
+_celery_redis_url = config("REDIS_URL", default="redis://localhost:6379/0")
+if _celery_redis_url.startswith("rediss://") and "?" not in _celery_redis_url:
+    _celery_redis_url += "?ssl_cert_reqs=CERT_NONE"
+CELERY_BROKER_URL = _celery_redis_url
 CELERY_RESULT_BACKEND = _celery_redis_url
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
