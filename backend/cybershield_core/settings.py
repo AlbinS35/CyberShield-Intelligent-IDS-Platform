@@ -235,9 +235,8 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Setting ALWAYS_EAGER=True executes every Celery task synchronously inside the
 # Uvicorn/Django request cycle so ML scoring, ingestion, and playbooks all fire.
 # For paid deployments with a real worker, remove / set to False.
-if not DEBUG:
-    CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
-    CELERY_TASK_EAGER_PROPAGATES = False
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = False
 
 # ─── OpenAPI / Swagger ────────────────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {
