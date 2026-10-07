@@ -86,26 +86,44 @@ export default function PlaybookManager() {
     e.preventDefault()
     setSavingUser(true)
     try {
-      await axios.post('/core/logins/', {
-        user: userForm.user,
-        email: userForm.email,
-        password: userForm.password || 'TemporaryPassword@2024',
-        role: userForm.role,
-        status: userForm.status
-      })
-      toast.success('User credentials created successfully!')
+      if (userForm.login_id) {
+        await axios.patch(`/core/logins/${userForm.login_id}/`, {
+          email: userForm.email,
+          role: userForm.role,
+          status: userForm.status,
+          ...(userForm.password ? { password: userForm.password } : {})
+        })
+        toast.success('User credentials updated successfully!')
+      } else {
+        await axios.post('/core/logins/', {
+          user: userForm.user,
+          email: userForm.email,
+          password: userForm.password || 'TemporaryPassword@2024',
+          role: userForm.role,
+          status: userForm.status
+        })
+        toast.success('User credentials created successfully!')
+      }
       setShowUserModal(false)
       setUserForm({ email: '', password: '', role: 'Analyst', status: 'ACTIVE', user: '' })
       refetchUsers()
     } catch (err) {
-      toast.error(err.response?.data ? JSON.stringify(err.response.data) : 'Failed to register user credentials')
+      toast.error(err.response?.data ? JSON.stringify(err.response.data) : 'Failed to save user credentials')
     } finally {
       setSavingUser(false)
     }
   }
 
   const handleEditUser = (u) => {
-    toast.error("Edit user functionality coming soon.")
+    setUserForm({
+      login_id: u.login_id,
+      user: u.user,
+      email: u.email,
+      password: '',
+      role: u.role,
+      status: u.status
+    })
+    setShowUserModal(true)
   }
 
   const handleDeleteUser = async (login_id) => {
@@ -238,7 +256,10 @@ export default function PlaybookManager() {
             </button>
           )}
           {activeTab === 'users' && (
-            <button onClick={() => setShowUserModal(true)} className="btn-primary flex items-center gap-2">
+            <button onClick={() => {
+              setUserForm({ email: '', password: '', role: 'Analyst', status: 'ACTIVE', user: '' })
+              setShowUserModal(true)
+            }} className="btn-primary flex items-center gap-2">
               <Plus className="w-4 h-4" /> Add User Credentials
             </button>
           )}
@@ -595,15 +616,18 @@ export default function PlaybookManager() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="glass-card w-full max-w-sm p-6 border-cyber-cyan/20"
             >
-              <h2 className="text-base font-bold text-white mb-4">Add User Credentials</h2>
+              <h2 className="text-base font-bold text-white mb-4">
+                {userForm.login_id ? 'Edit User Credentials' : 'Add User Credentials'}
+              </h2>
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
                   <label className="block text-[10px] uppercase text-gray-500 mb-1 font-semibold">Select Monitored User Profile</label>
                   <select
                     value={userForm.user}
                     onChange={e => setUserForm(p => ({ ...p, user: e.target.value }))}
-                    className="cyber-input w-full bg-navy-800 text-xs"
+                    className="cyber-input w-full bg-navy-800 text-xs disabled:opacity-50"
                     required
+                    disabled={!!userForm.login_id}
                   >
                     <option value="">Choose User Profile...</option>
                     {coreUsers?.map(cu => (
@@ -630,9 +654,9 @@ export default function PlaybookManager() {
                     type="text"
                     value={userForm.password}
                     onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))}
-                    placeholder="Enter password (default: TemporaryPassword@2024)"
+                    placeholder={userForm.login_id ? "Leave blank to keep unchanged" : "Enter password (default: TemporaryPassword@2024)"}
                     className="cyber-input w-full text-xs"
-                    required
+                    required={!userForm.login_id}
                   />
                 </div>
 
@@ -668,7 +692,7 @@ export default function PlaybookManager() {
                     Cancel
                   </button>
                   <button type="submit" disabled={savingUser} className="btn-primary text-xs">
-                    {savingUser ? 'Creating...' : 'Register User'}
+                    {savingUser ? 'Saving...' : (userForm.login_id ? 'Update User' : 'Register User')}
                   </button>
                 </div>
               </form>
