@@ -86,9 +86,20 @@ class SuricataIngestView(generics.GenericAPIView):
             return Response({"error": "'events' must be a list."}, status=status.HTTP_400_BAD_REQUEST)
 
         queued = 0
+        errors = []
         for event in events[:500]:  # cap at 500 per call
-            ingest_suricata_event.delay(tenant_id, event)
-            queued += 1
+            try:
+                ingest_suricata_event.delay(tenant_id, event)
+                queued += 1
+            except Exception as e:
+                import traceback
+                errors.append(traceback.format_exc())
+
+        if errors:
+            return Response(
+                {"detail": "Internal Server Error", "traceback": errors[0]},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         return Response(
             {"queued": queued, "message": f"{queued} Suricata events queued for ingestion."},
