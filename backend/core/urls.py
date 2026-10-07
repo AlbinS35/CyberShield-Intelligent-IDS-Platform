@@ -21,6 +21,7 @@ from .views import (
     CoreUserListView,
     CoreUserDetailView,
     LoginListView,
+    LoginDetailView,
     # Telemetry
     TelemetryListCreateView,
     TelemetryDetailView,
@@ -44,6 +45,7 @@ core_urlpatterns = [
     path("users/",                 CoreUserListView.as_view(),         name="core-user-list"),
     path("users/<uuid:user_id>/",  CoreUserDetailView.as_view(),       name="core-user-detail"),
     path("logins/",                LoginListView.as_view(),            name="login-list"),
+    path("logins/<uuid:pk>/",      LoginDetailView.as_view(),          name="login-detail"),
 ]
 
 # ─── Telemetry ingestion & verification ──────────────────────────────────────

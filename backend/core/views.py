@@ -211,6 +211,48 @@ class LoginListView(generics.ListCreateAPIView):
         serializer = self.get_serializer(auth_user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+class LoginDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/core/logins/<uuid>/  → retrieve login details
+    PUT    /api/core/logins/<uuid>/  → update login details
+    PATCH  /api/core/logins/<uuid>/  → partial update
+    DELETE /api/core/logins/<uuid>/  → delete user login
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from authentication.models import User as AuthUser
+        if hasattr(self.request.user, 'tenant') and self.request.user.tenant:
+            return AuthUser.objects.filter(tenant=self.request.user.tenant)
+        return AuthUser.objects.none()
+
+    def get_serializer_class(self):
+        from .serializers import AuthUserLoginSerializer
+        return AuthUserLoginSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        email = request.data.get("email")
+        if email:
+            instance.email = email
+            
+        role = request.data.get("role")
+        if role:
+            instance.role = role
+            
+        status_val = request.data.get("status")
+        if status_val:
+            instance.is_active = (status_val == "ACTIVE")
+            
+        password = request.data.get("password")
+        if password:
+            instance.set_password(password)
+            
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Telemetry — GET/POST /api/telemetry/
