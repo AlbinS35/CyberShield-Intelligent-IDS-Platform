@@ -222,7 +222,8 @@ export default function LoginPage() {
         ANALYST: '/analyst', INVESTIGATOR: '/forensics',
         SYS_ADMIN: '/admin', ORG_MANAGER: '/org', SUPER_ADMIN: '/analyst',
       }
-      navigate(routes[user?.role] || '/analyst', { replace: true })
+      const userRole = user?.role ? user.role.toUpperCase() : ''
+      navigate(routes[userRole] || '/analyst', { replace: true })
     } catch (err) {
       const msg = err?.response?.data?.detail 
         || (err?.response ? 'Invalid credentials. Please try again.' : 'Unable to connect to backend server (port 8000). Please ensure Django is running.')

@@ -257,7 +257,7 @@ export default function PlaybookManager() {
           )}
           {activeTab === 'users' && (
             <button onClick={() => {
-              setUserForm({ email: '', password: '', role: 'Analyst', status: 'ACTIVE', user: '' })
+              setUserForm({ email: '', password: '', role: 'ANALYST', status: 'ACTIVE', user: '' })
               setShowUserModal(true)
             }} className="btn-primary flex items-center gap-2">
               <Plus className="w-4 h-4" /> Add User Credentials
@@ -668,10 +668,10 @@ export default function PlaybookManager() {
                       onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}
                       className="cyber-input w-full bg-navy-800 text-xs"
                     >
-                      <option value="Analyst">Security Analyst</option>
-                      <option value="Investigator">Digital Forensic Investigator</option>
-                      <option value="Admin">System Administrator</option>
-                      <option value="Management">Organization Manager</option>
+                      <option value="ANALYST">Security Analyst</option>
+                      <option value="INVESTIGATOR">Digital Forensic Investigator</option>
+                      <option value="SYS_ADMIN">System Administrator</option>
+                      <option value="ORG_MANAGER">Organization Manager</option>
                     </select>
                   </div>
                   <div>
