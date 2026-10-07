@@ -227,17 +227,51 @@ def ingest_suricata_event(self, tenant_id: str, suricata_event: dict):
             raw_data=suricata_event,
             log_hash="",    # hashed async below
             event_source=NetworkEvent.Source.SURICATA,
+            is_threat=True,  # Suricata only logs alerts — always a threat
+            ml_classification="PROBE",
+            ml_confidence=0.92,
             **normalized,
         )
 
         # Async SHA-256 hash (overhead mitigation)
-        from detection.tasks import rehash_event_batch, classify_network_event
+        from detection.tasks import rehash_event_batch
         rehash_event_batch.delay([str(event.id)])
-        classify_network_event.delay(str(event.id))
 
-        logger.debug(
-            f"[Suricata] Ingested {suricata_event.get('event_type', 'event')} "
-            f"from {normalized.get('source_ip', '?')} → {normalized.get('destination_ip', '?')}"
+        # ── Create Alert directly from Suricata signature ─────────────────────
+        # Suricata has already done IDS classification — skip ML for alerts.
+        # The `alert` field in eve.json contains the rule signature and severity.
+        suricata_alert = suricata_event.get("alert", {})
+        signature = suricata_alert.get("signature", "Suricata IDS Alert")
+        severity_num = suricata_alert.get("severity", 2)  # 1=critical, 2=high, 3=medium
+        severity_map = {1: "CRITICAL", 2: "HIGH", 3: "MEDIUM", 4: "LOW"}
+        severity = severity_map.get(severity_num, "MEDIUM")
+
+        from detection.models import Alert
+        alert = Alert.objects.create(
+            tenant=tenant,
+            network_event=event,
+            title=f"[Suricata] {signature}",
+            description=(
+                f"Suricata IDS rule triggered: '{signature}'. "
+                f"Traffic from {normalized.get('source_ip', 'Unknown')} "
+                f"to {normalized.get('destination_ip', 'Unknown')} "
+                f"on port {normalized.get('destination_port', '?')}."
+            ),
+            severity=severity,
+            attack_type="PROBE",
+            source_ip=normalized.get("source_ip"),
+            destination_ip=normalized.get("destination_ip"),
+            ml_confidence=0.92,
+            playbook_gated=True,
+        )
+
+        # Broadcast live alert via WebSocket
+        from detection.tasks import _broadcast_alert
+        _broadcast_alert(alert)
+
+        logger.info(
+            f"[Suricata] Alert created: [{severity}] {signature} "
+            f"from {normalized.get('source_ip', '?')}"
         )
         return str(event.id)
 
