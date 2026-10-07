@@ -49,7 +49,8 @@ const ROLE_LABELS = {
 export default function Sidebar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const navItems = NAV_CONFIG[user?.role] || []
+  const userRole = user?.role ? user.role.toUpperCase() : ''
+  const navItems = NAV_CONFIG[userRole] || []
 
   const handleLogout = async () => {
     await logout()
@@ -66,7 +67,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest px-3 mb-2">
-          {ROLE_LABELS[user?.role] || 'Dashboard'}
+          {ROLE_LABELS[userRole] || 'Dashboard'}
         </div>
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
