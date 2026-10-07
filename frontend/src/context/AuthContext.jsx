@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
         const { data } = await authAPI.me()
         setUser({
           id:          data.id,
+          email:       data.email,
           role:        data.role,
           tenantId:    data.tenant?.id,
           tenantName:  data.tenant?.name,
@@ -37,6 +38,7 @@ export function AuthProvider({ children }) {
     }
     const userData = {
       id:         data.user.id,
+      email:      data.user.email,
       role:       data.user.role,
       tenantId:   data.user.tenant?.id,
       tenantName: data.user.tenant?.name,
@@ -54,6 +56,7 @@ export function AuthProvider({ children }) {
     }
     const userData = {
       id:         data.user.id,
+      email:      data.user.email,
       role:       data.user.role,
       tenantId:   data.user.tenant?.id,
       tenantName: data.user.tenant?.name,
