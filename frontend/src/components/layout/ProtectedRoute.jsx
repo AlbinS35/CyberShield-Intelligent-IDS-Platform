@@ -28,9 +28,10 @@ export default function ProtectedRoute({ roles = [] }) {
 
   if (!user) return <Navigate to="/login" replace />
 
-  if (roles.length > 0 && !roles.includes(user.role)) {
+  const userRole = user.role ? user.role.toUpperCase() : ''
+  if (roles.length > 0 && !roles.includes(userRole)) {
     // Redirect to user's appropriate dashboard
-    return <Navigate to={getRoleDefaultPath(user.role)} replace />
+    return <Navigate to={getRoleDefaultPath(userRole)} replace />
   }
 
   return <Outlet />
