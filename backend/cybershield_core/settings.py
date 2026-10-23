@@ -99,13 +99,14 @@ CHANNEL_LAYERS = {
 import dj_database_url
 _db_url = config("DATABASE_URL", default="postgres://cybershield_user:cybershield_pass@localhost:5432/cybershield_db")
 _ssl_required = any(provider in _db_url.lower() for provider in ("supabase", "neon.tech", "pooler"))
-DATABASES = {
-    "default": dj_database_url.config(
-        default=_db_url,
-        conn_max_age=600,
-        ssl_require=_ssl_required,
-    )
-}
+_db_config = dj_database_url.config(
+    default=_db_url,
+    conn_max_age=600,
+)
+# dj-database-url v2+ removed ssl_require; pass SSL via OPTIONS instead
+if _ssl_required:
+    _db_config.setdefault("OPTIONS", {})["sslmode"] = "require"
+DATABASES = {"default": _db_config}
 
 # ─── Cache Backend ────────────────────────────────────────────────────────────
 CACHES = {
@@ -257,7 +258,15 @@ SPECTACULAR_SETTINGS = {
 # ─── Static & Media ───────────────────────────────────────────────────────────
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Django 4.2+ replaced STATICFILES_STORAGE with the STORAGES dict
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
