@@ -5,7 +5,7 @@ import {
   CheckCircle2, ArrowRight, Zap, Activity, Radio, FileCheck,
   AlertTriangle, ChevronRight, Server, Globe, Users, Database,
   Play, Building2, KeyRound, Cpu, Search, X, PlayCircle,
-  Award, Target, BookOpen, HeartHandshake
+  Award, Target, BookOpen, HeartHandshake, Menu
 } from 'lucide-react'
 
 /* ─── Inline CSS for animations not in Tailwind ─── */
@@ -59,6 +59,15 @@ const styles = `
     background: #00F5FF;
     color: #001a1a;
     font-weight: 700;
+    min-height: 44px;
+    padding: 10px 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
     transition: all 0.25s ease;
   }
   .lp-glow-btn:hover {
@@ -71,6 +80,14 @@ const styles = `
     color: #00F5FF;
     background: transparent;
     font-weight: 600;
+    min-height: 44px;
+    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    cursor: pointer;
     transition: all 0.25s ease;
   }
   .lp-outline-btn:hover {
@@ -78,6 +95,188 @@ const styles = `
     border-color: #00F5FF;
     box-shadow: 0 0 16px rgba(0,245,255,0.2);
   }
+  .lp-nav-link {
+    color: rgba(220,228,228,0.7);
+    font-size: 14px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+    border-radius: 6px;
+  }
+  .lp-nav-link:hover {
+    color: #00F5FF;
+  }
+
+  /* Responsive layout classes */
+  .lp-desktop-nav {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+  }
+  .lp-mobile-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: #00F5FF;
+    cursor: pointer;
+  }
+  .lp-mobile-drawer {
+    display: none;
+  }
+
+  .lp-hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .lp-hero-title {
+    font-size: clamp(32px, 5.2vw, 52px);
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .lp-hero-ctas {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .lp-hero-primary-btn {
+    min-height: 52px;
+    min-width: 210px;
+    padding: 14px 32px;
+    font-size: 15px;
+  }
+  .lp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .lp-workspaces-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .lp-steps-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .lp-capabilities-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .lp-pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .lp-about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .lp-footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+  }
+
+  /* Responsive Breakpoints */
+  @media (max-width: 880px) {
+    .lp-desktop-nav {
+      display: none !important;
+    }
+    .lp-mobile-toggle {
+      display: flex !important;
+    }
+    .lp-mobile-drawer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 20px 24px;
+      background: rgba(11,15,26,0.98);
+      border-bottom: 1px solid rgba(0,245,255,0.2);
+      box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+    }
+    .lp-mobile-drawer .lp-nav-link {
+      width: 100%;
+      min-height: 48px;
+      font-size: 16px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .lp-hero-grid {
+      grid-template-columns: 1fr !important;
+      gap: 48px !important;
+    }
+    .lp-hero-ctas {
+      flex-direction: column;
+      width: 100%;
+    }
+    .lp-hero-ctas a, .lp-hero-ctas button {
+      width: 100%;
+      min-height: 52px;
+    }
+    .lp-stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .lp-workspaces-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .lp-steps-container {
+      flex-direction: column !important;
+      gap: 36px !important;
+    }
+    .lp-step-connector {
+      display: none !important;
+    }
+    .lp-capabilities-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .lp-pricing-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .lp-about-grid {
+      grid-template-columns: 1fr !important;
+      gap: 40px !important;
+    }
+    .lp-footer-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 32px !important;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .lp-stats-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .lp-capabilities-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .lp-footer-grid {
+      grid-template-columns: 1fr !important;
+      gap: 28px !important;
+    }
+  }
+
   .lp-gradient-text {
     background: linear-gradient(135deg, #00F5FF 0%, #00E676 100%);
     -webkit-background-clip: text;
@@ -302,6 +501,7 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const [isScrolled, setIsScrolled] = useState(false)
   const [showDemo, setShowDemo] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Live feed: keep a rolling list of max 4 events
   const [liveLog, setLiveLog] = useState(() => [makeEvent(), makeEvent(), makeEvent()])
@@ -337,7 +537,7 @@ export default function LandingPage() {
                   </div>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>CyberShield Platform Demo</span>
                 </div>
-                <button onClick={() => setShowDemo(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(220,228,228,0.5)', padding: 4 }}>
+                <button onClick={() => setShowDemo(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(220,228,228,0.5)', padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={18} />
                 </button>
               </div>
@@ -363,9 +563,9 @@ export default function LandingPage() {
                 </div>
                 <div style={{ textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20 }}>
                   <p className="mono" style={{ color: 'rgba(220,228,228,0.4)', fontSize: 11, marginBottom: 14 }}>Full video demo available upon request · CyberShield Enterprise Platform Demo</p>
-                  <Link to="/signup" onClick={() => setShowDemo(false)}>
-                    <button className="lp-glow-btn" style={{ padding: '11px 32px', borderRadius: 8, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <Building2 size={14} /> Start Free Trial
+                  <Link to="/signup" onClick={() => setShowDemo(false)} style={{ textDecoration: 'none' }}>
+                    <button className="lp-glow-btn" style={{ padding: '12px 32px', minHeight: 48, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <Building2 size={16} /> Start Free Trial
                     </button>
                   </Link>
                 </div>
@@ -377,60 +577,94 @@ export default function LandingPage() {
         {/* ── NAVBAR ── */}
         <nav style={{
           position: 'fixed', top: 0, width: '100%', zIndex: 50,
-          background: isScrolled ? 'rgba(11,15,26,0.92)' : 'rgba(11,15,26,0.7)',
+          background: isScrolled ? 'rgba(11,15,26,0.96)' : 'rgba(11,15,26,0.85)',
           backdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           boxShadow: isScrolled ? '0 0 30px rgba(0,245,255,0.08)' : 'none',
           transition: 'all 0.3s ease',
         }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
             {/* Logo */}
-            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, minHeight: 44 }}>
               <div style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', borderRadius: 8, padding: 6 }}>
                 <Shield size={20} style={{ color: '#00F5FF' }} />
               </div>
               <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em' }} className="lp-gradient-text">CyberShield</span>
             </Link>
 
-            {/* Nav Links — smooth scroll via JS */}
-            <div style={{ display: 'flex', gap: 36, alignItems: 'center' }}>
+            {/* Desktop Nav Links */}
+            <div className="lp-desktop-nav">
               {[['Features','features'],['How It Works','how-it-works'],['Pricing','pricing'],['About','about']].map(([label, id]) => (
-                <button key={id} onClick={() => scrollTo(id)}
-                  style={{ color: 'rgba(220,228,228,0.65)', fontSize: 14, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#00F5FF'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(220,228,228,0.65)'}
-                >{label}</button>
+                <button key={id} onClick={() => scrollTo(id)} className="lp-nav-link">
+                  {label}
+                </button>
               ))}
             </div>
 
-            {/* CTA Buttons */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <Link to="/signup">
-                <button className="lp-outline-btn" style={{ padding: '8px 20px', borderRadius: 6, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Building2 size={14} /> Tenant Portal
-                </button>
-              </Link>
-              <Link to="/login">
-                <button className="lp-glow-btn" style={{ padding: '8px 22px', borderRadius: 6, fontSize: 14 }}>
+            {/* Desktop CTA Buttons — Focused Hierarchy */}
+            <div className="lp-desktop-nav" style={{ gap: 12 }}>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <button className="lp-outline-btn">
                   Sign In
                 </button>
               </Link>
+              <Link to="/signup" style={{ textDecoration: 'none' }}>
+                <button className="lp-glow-btn">
+                  Start Free Trial <ArrowRight size={15} />
+                </button>
+              </Link>
             </div>
+
+            {/* Mobile Menu Toggle Button (44x44px touch target) */}
+            <button 
+              className="lp-mobile-toggle"
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
+
+          {/* Mobile Drawer */}
+          {mobileMenuOpen && (
+            <div className="lp-mobile-drawer">
+              {[['Features','features'],['How It Works','how-it-works'],['Pricing','pricing'],['About','about']].map(([label, id]) => (
+                <button 
+                  key={id} 
+                  onClick={() => { setMobileMenuOpen(false); scrollTo(id) }} 
+                  className="lp-nav-link"
+                >
+                  {label}
+                </button>
+              ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                  <button className="lp-glow-btn" style={{ width: '100%', minHeight: 48, fontSize: 15 }}>
+                    Start Free Trial <ArrowRight size={15} />
+                  </button>
+                </Link>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                  <button className="lp-outline-btn" style={{ width: '100%', minHeight: 48, fontSize: 15 }}>
+                    Sign In to Portal
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* ── HERO ── */}
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '140px 32px 80px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '140px 24px 80px' }}>
+          <div className="lp-hero-grid">
 
             {/* Left: Headlines */}
             <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.2)', borderRadius: 999, padding: '4px 14px', marginBottom: 24 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.2)', borderRadius: 999, padding: '6px 16px', marginBottom: 24 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00E676' }} className="lp-pulse-green" />
                 <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.08em' }}>SYSTEM ONLINE · ALL AGENTS ACTIVE</span>
               </div>
 
-              <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em', color: '#fff', marginBottom: 20 }}>
+              <h1 className="lp-hero-title">
                 Stop Threats.<br />
                 Secure Evidence.<br />
                 <span className="lp-gradient-text">Command Your Defense.</span>
@@ -440,21 +674,21 @@ export default function LandingPage() {
                 AI-powered intrusion detection, automated threat prevention, and legally-resilient digital forensics — unified in one intelligent SaaS platform.
               </p>
 
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <Link to="/signup">
-                  <button className="lp-glow-btn" style={{ padding: '14px 32px', borderRadius: 8, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="lp-hero-ctas">
+                <Link to="/signup" style={{ textDecoration: 'none' }}>
+                  <button className="lp-glow-btn lp-hero-primary-btn">
                     Start Free Trial <ArrowRight size={16} />
                   </button>
                 </Link>
-                <button className="lp-outline-btn" onClick={() => setShowDemo(true)} style={{ padding: '14px 28px', borderRadius: 8, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button className="lp-outline-btn" onClick={() => setShowDemo(true)} style={{ minHeight: 52, padding: '14px 28px', fontSize: 15 }}>
                   <Play size={16} /> Watch Demo
                 </button>
               </div>
 
-              <div style={{ marginTop: 32, display: 'flex', gap: 24 }}>
+              <div style={{ marginTop: 32, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {['No credit card required', '14-day free trial', 'GDPR compliant'].map(t => (
                   <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(220,228,228,0.5)' }}>
-                    <CheckCircle2 size={13} style={{ color: '#00E676' }} /> {t}
+                    <CheckCircle2 size={14} style={{ color: '#00E676' }} /> {t}
                   </span>
                 ))}
               </div>
@@ -521,8 +755,8 @@ export default function LandingPage() {
         </section>
 
         {/* ── LIVE STATS BAR ── */}
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px 80px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
+          <div className="lp-stats-grid">
             {[
               { val: '2.4M+', lbl: 'Threats Blocked', icon: Shield },
               { val: '99.7%', lbl: 'ML Accuracy', icon: Cpu },
@@ -539,16 +773,16 @@ export default function LandingPage() {
         </section>
 
         {/* ── FEATURES / WORKSPACES ── */}
-        <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
+        <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Role-Based Access</span>
-            <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Four Specialized Security Workspaces</h2>
-            <p style={{ color: 'rgba(220,228,228,0.55)', fontSize: 17, marginTop: 12, maxWidth: 600, margin: '12px auto 0' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Four Specialized Security Workspaces</h2>
+            <p style={{ color: 'rgba(220,228,228,0.55)', fontSize: 16, marginTop: 12, maxWidth: 600, margin: '12px auto 0' }}>
               Every role gets a purpose-built dashboard with the exact tools they need — no noise, no distractions.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 24 }}>
+          <div className="lp-workspaces-grid">
             {WORKSPACES.map(({ role, badge, icon: Icon, color, borderColor, glowColor, features }) => (
               <div key={role} className="lp-glass" style={{ borderRadius: 16, padding: 28, border: `1px solid ${borderColor}`, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, background: glowColor, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
@@ -571,7 +805,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
-                  <Link to="/login" style={{ color, fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Link to="/login" style={{ color, fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44 }}>
                     Access Workspace <ChevronRight size={14} />
                   </Link>
                 </div>
@@ -581,13 +815,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ── */}
-        <section id="how-it-works" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
+        <section id="how-it-works" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>The Platform Pipeline</span>
-            <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>How CyberShield Works</h2>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>How CyberShield Works</h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+          <div className="lp-steps-container">
             {STEPS.map((step, i) => (
               <div key={step.title} style={{ display: 'flex', flex: 1, alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, padding: '0 20px' }}>
@@ -615,12 +849,12 @@ export default function LandingPage() {
         </section>
 
         {/* ── CAPABILITIES ── */}
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Core Capabilities</span>
-            <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Built for Modern Security Operations</h2>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Built for Modern Security Operations</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+          <div className="lp-capabilities-grid">
             {CAPABILITIES.map(({ icon: Icon, label }) => (
               <div key={label} className="lp-glass" style={{ borderRadius: 12, padding: '20px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.15)', borderRadius: 8, padding: 8, flexShrink: 0 }}>
@@ -633,14 +867,14 @@ export default function LandingPage() {
         </section>
 
         {/* ── PRICING ── */}
-        <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
+        <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Transparent Pricing</span>
-            <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Simple Plans in ₹ Indian Rupees</h2>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Simple Plans in ₹ Indian Rupees</h2>
             <p style={{ color: 'rgba(220,228,228,0.5)', fontSize: 16, marginTop: 10 }}>No hidden fees. Cancel anytime.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
+          <div className="lp-pricing-grid">
             {PLANS.map(({ name, price, period, tag, desc, features, cta, highlight }) => (
               <div key={name} style={{
                 borderRadius: 16, padding: 32,
@@ -668,10 +902,10 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/signup">
+                <Link to="/signup" style={{ textDecoration: 'none' }}>
                   <button
                     className={highlight ? 'lp-glow-btn' : 'lp-outline-btn'}
-                    style={{ width: '100%', padding: '12px', borderRadius: 8, fontSize: 14, cursor: 'pointer' }}
+                    style={{ width: '100%', minHeight: 48, fontSize: 14 }}
                   >{cta}</button>
                 </Link>
               </div>
@@ -680,26 +914,26 @@ export default function LandingPage() {
         </section>
 
         {/* ── TENANT REGISTRATION CTA ── */}
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
-          <div className="lp-tenant-border" style={{ borderRadius: 20, padding: '60px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
+          <div className="lp-tenant-border" style={{ borderRadius: 20, padding: '60px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 300, height: 200, background: 'rgba(0,245,255,0.06)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }} />
             <div style={{ position: 'relative' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.25)', borderRadius: 999, padding: '4px 14px', marginBottom: 20 }}>
                 <Building2 size={12} style={{ color: '#00E676' }} />
                 <span className="mono" style={{ color: '#00E676', fontSize: 11, letterSpacing: '0.08em' }}>FOR ORGANIZATIONS</span>
               </div>
-              <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginBottom: 16, letterSpacing: '-0.02em' }}>Register Your Organization</h2>
+              <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginBottom: 16, letterSpacing: '-0.02em' }}>Register Your Organization</h2>
               <p style={{ fontSize: 17, color: 'rgba(220,228,228,0.65)', maxWidth: 540, margin: '0 auto 36px', lineHeight: 1.7 }}>
                 Set up CyberShield for your company in minutes. Create your tenant portal, onboard your security team, and start protecting your infrastructure today.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                <Link to="/signup">
-                  <button className="lp-glow-btn" style={{ padding: '16px 48px', borderRadius: 10, fontSize: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Link to="/signup" style={{ textDecoration: 'none' }}>
+                  <button className="lp-glow-btn" style={{ padding: '16px 40px', minHeight: 52, borderRadius: 10, fontSize: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Building2 size={18} /> Register as Organization / Tenant
                   </button>
                 </Link>
-                <Link to="/login" style={{ color: 'rgba(0,245,255,0.7)', fontSize: 14, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Already have a tenant? Sign in to your portal <ArrowRight size={13} />
+                <Link to="/login" style={{ color: 'rgba(0,245,255,0.8)', fontSize: 14, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '8px 16px' }}>
+                  Already have a tenant? Sign in to your portal <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
@@ -707,12 +941,12 @@ export default function LandingPage() {
         </section>
 
         {/* ── ABOUT SECTION ── */}
-        <section id="about" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+        <section id="about" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
+          <div className="lp-about-grid">
             {/* Left */}
             <div>
               <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>About CyberShield</span>
-              <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff', marginTop: 10, marginBottom: 18, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 10, marginBottom: 18, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
                 Built for the Real World of Cybersecurity
               </h2>
               <p style={{ fontSize: 16, color: 'rgba(220,228,228,0.6)', lineHeight: 1.75, marginBottom: 24 }}>
@@ -767,8 +1001,8 @@ export default function LandingPage() {
         </section>
 
         {/* ── FOOTER ── */}
-        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '48px 32px', background: 'rgba(0,0,0,0.2)' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40 }}>
+        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '48px 24px', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="lp-footer-grid" style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <div style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', borderRadius: 6, padding: 5 }}>
@@ -793,7 +1027,7 @@ export default function LandingPage() {
                 <h4 className="mono" style={{ color: 'rgba(220,228,228,0.5)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>{title}</h4>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {links.map(l => (
-                    <li key={l}><a href="#" style={{ color: 'rgba(220,228,228,0.5)', fontSize: 14, textDecoration: 'none', transition: 'color 0.2s' }}
+                    <li key={l}><a href="#" style={{ color: 'rgba(220,228,228,0.5)', fontSize: 14, textDecoration: 'none', transition: 'color 0.2s', display: 'inline-block', minHeight: 32, padding: '4px 0' }}
                       onMouseEnter={e => e.target.style.color = '#00F5FF'}
                       onMouseLeave={e => e.target.style.color = 'rgba(220,228,228,0.5)'}
                     >{l}</a></li>

@@ -226,7 +226,7 @@ export default function LoginPage() {
       navigate(routes[userRole] || '/analyst', { replace: true })
     } catch (err) {
       const msg = err?.response?.data?.detail 
-        || (err?.response ? 'Invalid credentials. Please try again.' : 'Unable to connect to backend server (port 8000). Please ensure Django is running.')
+        || (err?.response ? 'Invalid credentials. Please try again.' : 'Unable to reach the server. The backend may be waking up — please wait 30 seconds and try again.')
       setError(msg)
       toast.error(msg)
     } finally {

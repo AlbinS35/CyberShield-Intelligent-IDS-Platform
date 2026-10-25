@@ -21,7 +21,7 @@
 
 ## 📌 Project Overview
 
-CyberShield is a unified, enterprise-grade security ecosystem designed to bridge the structural gaps between real-time threat detection, automated incident containment, and legally resilient digital forensics. Traditional security frameworks often alert administrators without taking protective action or decouple post-incident forensic analysis from live infrastructure. CyberShield unifies these pipelines into a centralized web architecture utilizing a dual-phase implementation strategy.
+CyberShield is a lightweight, explainable intrusion detection and tamper-evident digital forensics platform for small organizations. Traditional security frameworks often alert administrators without taking protective action or decouple post-incident forensic analysis from live infrastructure. CyberShield unifies these pipelines into a centralized web architecture utilizing a dual-phase implementation strategy.
 
 This project is developed as part of the **Research Project/Software Project Part 1 (24MCAR295)** for the Master of Computer Applications (MCA) curriculum at **Amal Jyothi College of Engineering (Autonomous), Kanjirappally**.
 
@@ -89,6 +89,16 @@ This project is developed as part of the **Research Project/Software Project Par
 | Forensic Investigator | Case management, evidence vault, timeline |
 | System Administrator | Asset registry, system health, alert rule config |
 | Org Manager | Security metrics, compliance reports, audit trail |
+
+---
+
+## ⚠️ Known Limitations & Threat Model
+
+While CyberShield demonstrates a complete detection-to-response pipeline, the following limitations apply in its current iteration:
+1. **Machine Learning Model Mismatch:** The current Random Forest model is trained on the NSL-KDD dataset (which uses legacy features like `serror_rate`). These features do not directly map 1:1 with real-time `eve.json` flow features emitted by Suricata. Thus, production deployments would require re-training on a flow-based dataset (e.g., CIC-IDS-2017) to achieve high accuracy on live traffic.
+2. **Forensic Integrity Scope:** Evidence and log hashes are stored alongside the data in PostgreSQL. While this provides *tamper-evidence* against accidental modification, a malicious actor with direct database write access could recalculate and replace the hashes. Full legal admissibility would require anchoring these hashes to an immutable external ledger or hash chain.
+3. **Automated Response Safety:** Playbook scripts (e.g., executing `iptables`) use a rigid allowlist and parameterized execution. However, any automated execution of root-level commands on sensors carries inherent risks. Playbooks should ideally be replaced with purpose-built, unprivileged agents (e.g. CrowdSec bouncers or eBPF hooks) in production environments.
+4. **Load Capacity:** Ingestion is handled via Celery and Redis. While adequate for lab traffic or small network choke points, multi-gigabit traffic (generating tens of thousands of alerts per second) would require a Kafka-backed ingestion pipeline.
 
 ---
 
