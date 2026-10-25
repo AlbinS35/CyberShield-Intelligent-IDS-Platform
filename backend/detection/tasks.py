@@ -321,6 +321,17 @@ def execute_playbook(self, playbook_id: str, alert_id: str = None, target_ip: st
 
             # Substitute {ip} placeholder with the validated, normalised IP
             cmd = raw_cmd.format(ip=safe_ip)
+            
+            # ── Strict Allowlist Validation ──
+            # Prevent arbitrary RCE even if an admin modifies the playbook
+            ALLOWED_BINARIES = {"iptables", "ufw", "echo"} # echo for testing/simulation
+            cmd_parts = shlex.split(cmd)
+            if not cmd_parts or cmd_parts[0] not in ALLOWED_BINARIES:
+                logger.error(f"Playbook blocked: binary '{cmd_parts[0] if cmd_parts else 'None'}' is not in allowlist.")
+                combined_stderr.append(f"Security error: binary '{cmd_parts[0] if cmd_parts else 'None'}' is not allowed.")
+                final_exit_code = 127
+                break
+
             logger.info(f"[Playbook '{playbook.name}'] Running: {cmd}" + (" (DRY RUN)" if dry_run else ""))
 
             if dry_run:
@@ -328,7 +339,7 @@ def execute_playbook(self, playbook_id: str, alert_id: str = None, target_ip: st
                 continue
 
             result = subprocess.run(
-                shlex.split(cmd),
+                cmd_parts,
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -390,13 +401,23 @@ def rehash_event_batch(self, event_ids: list):
         events = NetworkEvent.objects.filter(id__in=event_ids, log_hash="")
         updates = []
         for event in events:
+            # ── Cryptographic Hash Chaining ──
+            # Link to the previous event to form a Merkle-like chain for true tamper evidence.
+            previous_event = NetworkEvent.objects.filter(
+                tenant=event.tenant, 
+                ingested_at__lt=event.ingested_at
+            ).exclude(log_hash="").order_by("-ingested_at").first()
+            
+            prev_hash = previous_event.log_hash if previous_event else "GENESIS_BLOCK"
+            
             raw = json.dumps(event.raw_data, sort_keys=True, separators=(",", ":"))
-            event.log_hash = hashlib.sha256(raw.encode()).hexdigest()
+            chained_payload = f"{prev_hash}||{raw}"
+            event.log_hash = hashlib.sha256(chained_payload.encode()).hexdigest()
             updates.append(event)
 
         if updates:
             NetworkEvent.objects.bulk_update(updates, ["log_hash"], batch_size=100)
-            logger.info(f"[Hash] SHA-256 computed for {len(updates)} events.")
+            logger.info(f"[Hash] SHA-256 chain computed for {len(updates)} events.")
 
     except Exception as exc:
         logger.error(f"[Hash] Batch rehash failed: {exc}")

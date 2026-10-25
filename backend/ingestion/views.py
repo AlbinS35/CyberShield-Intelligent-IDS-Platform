@@ -120,11 +120,27 @@ class WazuhSyncTriggerView(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         tenant_id = str(tenant.id)
-        task = sync_wazuh_alerts.delay(tenant_id)
-        return Response(
-            {"message": "Wazuh sync task queued.", "task_id": task.id},
-            status=status.HTTP_202_ACCEPTED,
-        )
+        try:
+            task = sync_wazuh_alerts.delay(tenant_id)
+            task_id = getattr(task, "id", "queued")
+            return Response(
+                {"message": "Wazuh sync task queued.", "task_id": str(task_id)},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as exc:
+            logger.warning(f"Celery queue failed for sync_wazuh_alerts: {exc}. Running directly.")
+            try:
+                sync_wazuh_alerts(tenant_id)
+                return Response(
+                    {"message": "Wazuh telemetry synchronized directly.", "task_id": "direct"},
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as inner_exc:
+                logger.error(f"Direct Wazuh sync execution failed: {inner_exc}")
+                return Response(
+                    {"error": f"Failed to trigger synchronization: {str(inner_exc)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
 
 class IngestionStatusView(APIView):

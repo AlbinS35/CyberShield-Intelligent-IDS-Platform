@@ -53,6 +53,45 @@ def test_valid_analyst_login(driver):
     )
 
 
+class TestAnalystAuth:
+    """Test Case 1: Security Analyst Login Test (Academic Report Suite)."""
+    def setup_method(self):
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        opts = Options()
+        opts.add_argument("--headless=new")
+        opts.add_argument("--incognito")
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--disable-gpu")
+        opts.add_argument("--window-size=1920,1080")
+        opts.add_argument("--ignore-certificate-errors")
+        self.driver = webdriver.Chrome(options=opts)
+        self.wait = WebDriverWait(self.driver, 25)
+
+    def teardown_method(self):
+        self.driver.quit()
+
+    def test_valid_analyst_login(self):
+        driver = self.driver
+        wait = self.wait
+        driver.get("https://cyber-shield-frontend-app.vercel.app/login")
+
+        analyst_tab = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//div[contains(text(), 'Security Analyst')]")))
+        analyst_tab.click()
+        time.sleep(1)
+
+        submit_btn = wait.until(EC.element_to_be_clickable(
+            (By.CSS_SELECTOR, "button[type='submit']")))
+        submit_btn.click()
+
+        wait.until(EC.url_contains("/analyst"))
+        assert "/analyst" in driver.current_url
+        assert wait.until(EC.visibility_of_element_located(
+            (By.XPATH, "//*[contains(text(), 'LIVE')]"))).is_displayed()
+
+
 
 # ─────────────────────────────────────────────────────────────
 #  TC-AUTH-003: Invalid password shows error

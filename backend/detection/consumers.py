@@ -94,5 +94,6 @@ class AlertConsumer(AsyncWebsocketConsumer):
             token = AccessToken(token_str)
             user_id = token.get("user_id")
             return User.objects.select_related("tenant").get(id=user_id, is_active=True)
-        except (TokenError, User.DoesNotExist, Exception):
+        except Exception as e:
+            logger.error(f"WebSocket auth failed: {type(e).__name__} - {e}")
             return None

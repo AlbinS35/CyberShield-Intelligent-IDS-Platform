@@ -86,11 +86,16 @@ TEMPLATES = [
 ASGI_APPLICATION = "cybershield_core.asgi.application"
 
 REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
+_channel_hosts = [REDIS_URL]
+if REDIS_URL.startswith("rediss://") and "ssl_cert_reqs" not in REDIS_URL:
+    sep = "&" if "?" in REDIS_URL else "?"
+    _channel_hosts = [f"{REDIS_URL}{sep}ssl_cert_reqs=none"]
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
+            "hosts": _channel_hosts,
         },
     },
 }
@@ -223,9 +228,15 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ─── Celery ───────────────────────────────────────────────────────────────────
+import ssl as _ssl
 _celery_redis_url = config("REDIS_URL", default="redis://localhost:6379/0")
-if _celery_redis_url.startswith("rediss://") and "?" not in _celery_redis_url:
-    _celery_redis_url += "?ssl_cert_reqs=CERT_NONE"
+if _celery_redis_url.startswith("rediss://"):
+    if "ssl_cert_reqs" not in _celery_redis_url:
+        sep = "&" if "?" in _celery_redis_url else "?"
+        _celery_redis_url += f"{sep}ssl_cert_reqs=CERT_NONE"
+    CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": _ssl.CERT_NONE}
+    CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": _ssl.CERT_NONE}
+
 CELERY_BROKER_URL = _celery_redis_url
 CELERY_RESULT_BACKEND = _celery_redis_url
 CELERY_ACCEPT_CONTENT = ["json"]

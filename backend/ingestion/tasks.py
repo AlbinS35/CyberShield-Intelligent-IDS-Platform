@@ -182,13 +182,24 @@ def sync_wazuh_alerts(self, tenant_id: str):
             event_ids = [str(e.id) for e in new_events]
 
             # Dispatch async SHA-256 hashing in one batch (overhead mitigation)
-            from detection.tasks import rehash_event_batch
-            rehash_event_batch.delay(event_ids)
+            try:
+                from detection.tasks import rehash_event_batch
+                rehash_event_batch.delay(event_ids)
+            except Exception as exc:
+                logger.warning(f"Celery queue failed for rehash_event_batch: {exc}, running inline.")
+                from detection.tasks import rehash_event_batch
+                rehash_event_batch(event_ids)
 
             # Queue ML classification for each new event
-            from detection.tasks import classify_network_event
-            for eid in event_ids:
-                classify_network_event.delay(eid)
+            try:
+                from detection.tasks import classify_network_event
+                for eid in event_ids:
+                    classify_network_event.delay(eid)
+            except Exception as exc:
+                logger.warning(f"Celery queue failed for classify_network_event: {exc}, running inline.")
+                from detection.tasks import classify_network_event
+                for eid in event_ids:
+                    classify_network_event(eid)
 
         logger.info(f"[{tenant.name}] Wazuh sync: {ingested_count} new events ingested.")
         return ingested_count
@@ -199,7 +210,10 @@ def sync_wazuh_alerts(self, tenant_id: str):
             sync_log.status = "FAILED"
             sync_log.error_message = str(exc)
             sync_log.save()
-        raise self.retry(exc=exc)
+        # Only retry if not eager (in eager mode retry raises an unhandled exception)
+        from django.conf import settings
+        if not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", True):
+            raise self.retry(exc=exc)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=15)
