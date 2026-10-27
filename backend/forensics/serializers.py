@@ -21,6 +21,15 @@ class ForensicCaseSerializer(serializers.ModelSerializer):
             "created_at", "updated_at", "closed_at",
         ]
         read_only_fields = ["id", "case_number", "created_at", "updated_at"]
+        extra_kwargs = {
+            "description": {"required": False, "allow_blank": True},
+        }
+
+    def to_internal_value(self, data):
+        data = data.copy() if hasattr(data, "copy") else dict(data)
+        if "case_title" in data and not data.get("title"):
+            data["title"] = data["case_title"]
+        return super().to_internal_value(data)
 
     def get_evidence_count(self, obj):
         return obj.evidence.count()

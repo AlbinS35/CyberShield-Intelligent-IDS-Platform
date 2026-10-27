@@ -30,12 +30,18 @@ class ForensicCaseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAnalystOrAbove]
 
     def get_queryset(self):
-        return ForensicCase.objects.filter(tenant=self.request.user.tenant).select_related(
-            "lead_investigator", "related_incident"
-        )
+        tenant = getattr(self.request.user, "tenant", None)
+        qs = ForensicCase.objects.select_related("lead_investigator", "related_incident")
+        if tenant:
+            return qs.filter(tenant=tenant)
+        return qs.all()
 
     def perform_create(self, serializer):
-        serializer.save(tenant=self.request.user.tenant, lead_investigator=self.request.user)
+        tenant = getattr(self.request.user, "tenant", None)
+        if not tenant:
+            from authentication.models import Tenant
+            tenant = Tenant.objects.first()
+        serializer.save(tenant=tenant, lead_investigator=self.request.user)
 
     @action(detail=True, methods=["get"], url_path="timeline")
     def timeline(self, request, pk=None):

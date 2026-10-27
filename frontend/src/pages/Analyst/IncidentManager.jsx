@@ -252,14 +252,23 @@ function IncidentDrawer({ incident, onClose }) {
     setReferring(true)
     try {
       await forensicsAPI.createCase({
+        title: `Incident Escalation: ${incident.title}`,
         case_title: `Incident Escalation: ${incident.title}`,
         description: `Incident description: ${incident.description || 'No description'}\nSeverity: ${incident.severity}\nTriggered: ${format(new Date(incident.created_at), 'yyyy-MM-dd HH:mm:ss')}`,
-        status: 'OPEN'
+        status: 'OPEN',
+        classification: 'CONFIDENTIAL',
+        related_incident: incident.id,
       })
       toast.success('Successfully referred incident to Digital Forensics Case Vault!')
       onClose()
     } catch (err) {
-      toast.error('Failed to create forensics case from incident')
+      console.error('Failed to create forensics case:', err)
+      const errorMsg =
+        err.response?.data?.title?.[0] ||
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        'Failed to create forensics case from incident'
+      toast.error(errorMsg)
     } finally {
       setReferring(false)
     }
