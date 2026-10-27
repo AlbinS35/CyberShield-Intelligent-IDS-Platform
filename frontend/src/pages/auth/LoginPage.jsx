@@ -173,7 +173,7 @@ export default function LoginPage() {
 
   const [selectedRole, setSelectedRole] = useState('ANALYST')
   const [email, setEmail] = useState('analyst@cybershield.demo')
-  const [password, setPassword] = useState('CyberShield@2024')
+  const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [orgId, setOrgId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -188,7 +188,7 @@ export default function LoginPage() {
   const handleRoleSelect = (role) => {
     setSelectedRole(role.key)
     setEmail(role.email)
-    setPassword('CyberShield@2024')
+    setPassword('')
     setError('')
   }
 
@@ -366,24 +366,7 @@ export default function LoginPage() {
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <span style={{ fontSize: 11, color: 'rgba(220,228,228,0.45)' }}>
-                    Demo password:{' '}
-                    <code
-                      style={{
-                        color: '#00F5FF',
-                        background: 'rgba(0,245,255,0.08)',
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                      title="Click to fill password"
-                      onClick={() => setPassword('CyberShield@2024')}
-                    >
-                      CyberShield@2024
-                    </code>
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                   <Link to="/forgot-password" style={{ fontSize: 12, color: '#00F5FF', textDecoration: 'none', fontWeight: 500 }}>Forgot Password?</Link>
                 </div>
               </div>

@@ -437,31 +437,31 @@ const CAPABILITIES = [
 const PLANS = [
   {
     name: 'Starter',
-    price: '₹4,999',
+    price: '₹1,999',
     period: '/month',
     tag: null,
     desc: 'For small security teams getting started',
-    features: ['Up to 5 users', '10 monitored assets', 'Basic ML detection', 'Alert management', 'Email support'],
-    cta: 'Get Started',
+    features: ['Up to 5 users', '10 monitored assets', 'Basic ML detection', 'Alert management', 'WebSocket live feed', 'Email support'],
+    cta: 'Get Started Free',
     highlight: false,
   },
   {
     name: 'Professional',
-    price: '₹14,999',
+    price: '₹7,999',
     period: '/month',
     tag: 'MOST POPULAR',
     desc: 'For growing security operations centers',
-    features: ['Up to 25 users', '100 monitored assets', 'Full ML + forensics vault', 'Wazuh API integration', 'Playbook automation', 'Priority support'],
+    features: ['Up to 25 users', '100 monitored assets', 'Full ML + SHAP explanations', 'Forensics vault & evidence hashing', 'Wazuh API integration', 'Playbook automation & SOAR', 'Priority support'],
     cta: 'Start Free Trial',
     highlight: true,
   },
   {
     name: 'Enterprise',
-    price: '₹39,999',
+    price: '₹19,999',
     period: '/month',
     tag: null,
     desc: 'For enterprise-grade security infrastructure',
-    features: ['Unlimited users', 'Custom asset limit', 'All Pro features + SLA', 'Custom playbook rules', 'Dedicated support', 'On-prem deployment option'],
+    features: ['Unlimited users', 'Custom asset limit', 'All Pro features + SLA', 'Custom playbook rules', 'Dedicated account manager', 'On-prem deployment option', 'ISO 27001 compliance exports'],
     cta: 'Contact Sales',
     highlight: false,
   },
@@ -671,7 +671,7 @@ export default function LandingPage() {
               </h1>
 
               <p style={{ fontSize: 18, lineHeight: 1.7, color: 'rgba(220,228,228,0.7)', marginBottom: 36, maxWidth: 480 }}>
-                AI-powered intrusion detection, automated threat prevention, and legally-resilient digital forensics — unified in one intelligent SaaS platform.
+                AI-powered intrusion detection, automated threat containment, and legally-resilient digital forensics — unified in one intelligent security platform.
               </p>
 
               <div className="lp-hero-ctas">
@@ -686,7 +686,7 @@ export default function LandingPage() {
               </div>
 
               <div style={{ marginTop: 32, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                {['No credit card required', '14-day free trial', 'GDPR compliant'].map(t => (
+                {['No credit card required', 'Open registration', 'ISO 27037 compliant'].map(t => (
                   <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(220,228,228,0.5)' }}>
                     <CheckCircle2 size={14} style={{ color: '#00E676' }} /> {t}
                   </span>
@@ -758,10 +758,10 @@ export default function LandingPage() {
         <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
           <div className="lp-stats-grid">
             {[
-              { val: '2.4M+', lbl: 'Threats Blocked', icon: Shield },
-              { val: '99.7%', lbl: 'ML Accuracy', icon: Cpu },
-              { val: '<50ms', lbl: 'Detection Latency', icon: Activity },
-              { val: '150+', lbl: 'Enterprises Protected', icon: Globe },
+              { val: '99.7%', lbl: 'ML Detection Accuracy', icon: Cpu },
+              { val: '<50ms', lbl: 'Alert Latency', icon: Activity },
+              { val: 'SHA-256', lbl: 'Evidence Integrity Seal', icon: Shield },
+              { val: '5 Roles', lbl: 'Purpose-Built Workspaces', icon: Users },
             ].map(({ val, lbl, icon: Icon }) => (
               <div key={lbl} className="lp-glass" style={{ borderRadius: 12, padding: '24px', textAlign: 'center' }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00E676', margin: '0 auto 12px' }} className="lp-pulse-green" />
@@ -870,8 +870,8 @@ export default function LandingPage() {
         <section id="pricing" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <span className="mono" style={{ color: '#00F5FF', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Transparent Pricing</span>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Simple Plans in ₹ Indian Rupees</h2>
-            <p style={{ color: 'rgba(220,228,228,0.5)', fontSize: 16, marginTop: 10 }}>No hidden fees. Cancel anytime.</p>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: '#fff', marginTop: 8, letterSpacing: '-0.02em' }}>Affordable Plans for Every Team</h2>
+            <p style={{ color: 'rgba(220,228,228,0.5)', fontSize: 16, marginTop: 10 }}>No hidden fees. Cancel anytime. Save 20% with annual billing.</p>
           </div>
 
           <div className="lp-pricing-grid">
