@@ -95,7 +95,9 @@ export default function ComplianceReports() {
       title: reportTitle,
       report_type: reportType,
       status: 'DRAFT',
-      auditor_notes: ''
+      auditor_notes: '',
+      metrics: {},
+      findings: []
     })
   }
 
