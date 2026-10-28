@@ -3,7 +3,7 @@ Ingestion Views
 Network event CRUD, Wazuh sync status, manual sync trigger,
 and live ingestion health / diagnostics endpoint.
 """
-
+import logging
 from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +15,8 @@ from datetime import timedelta
 from .models import NetworkEvent, WazuhSyncLog
 from .serializers import NetworkEventSerializer, WazuhSyncLogSerializer
 from authentication.permissions import IsAnalystOrAbove, IsSysAdmin
+
+logger = logging.getLogger("cybershield.ingestion.views")
 
 
 class NetworkEventViewSet(viewsets.ReadOnlyModelViewSet):
