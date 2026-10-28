@@ -108,6 +108,28 @@ function AlertRow({ alert, isNew }) {
   )
 }
 
+// ─── Severity Tooltip Component ───────────────────────────────────────────────
+function SeverityTooltip({ active, payload }) {
+  if (active && payload && payload.length) {
+    const item = payload[0]
+    return (
+      <div className="bg-navy-900/95 border border-cyber-cyan/30 rounded-lg px-3 py-2 shadow-2xl backdrop-blur-md pointer-events-none">
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+            style={{ backgroundColor: item.payload?.color || item.color || '#00F5FF' }}
+          />
+          <span className="text-xs font-semibold text-gray-100">{item.name}</span>
+        </div>
+        <div className="mt-1 text-xs font-mono text-cyber-cyan font-bold">
+          {item.value} {item.value === 1 ? 'Alert' : 'Alerts'}
+        </div>
+      </div>
+    )
+  }
+  return null
+}
+
 // ─── Main Analyst Dashboard ───────────────────────────────────────────────────
 export default function AnalystDashboard() {
   const { subscribe, latestAlert } = useSocket()
@@ -241,18 +263,28 @@ export default function AnalystDashboard() {
         <div className="glass-card p-5">
           <h2 className="text-sm font-semibold text-gray-200 mb-4">Alert Severity Distribution</h2>
           {severityData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={severityData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                  {severityData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} opacity={0.85} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid rgba(0,245,255,0.2)', borderRadius: 8, fontSize: 12 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="w-full h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={severityData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={severityData.length > 1 ? 3 : 0}
+                    dataKey="value"
+                    nameKey="name"
+                    isAnimationActive={false}
+                  >
+                    {severityData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} opacity={0.85} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<SeverityTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-40 flex items-center justify-center text-gray-600 text-sm">No alerts</div>
           )}

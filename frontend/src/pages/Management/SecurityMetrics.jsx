@@ -157,14 +157,20 @@ export default function SecurityMetrics() {
                       cy="50%"
                       innerRadius={60}
                       outerRadius={80}
-                      paddingAngle={4}
+                      paddingAngle={severityData.length > 1 ? 4 : 0}
                       dataKey="value"
+                      nameKey="name"
+                      isAnimationActive={false}
                     >
                       {severityData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: '#0F172A', borderColor: '#334155', borderRadius: 6, fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ background: '#0F172A', borderColor: '#334155', borderRadius: 6, fontSize: 11 }}
+                      itemStyle={{ color: '#F3F4F6' }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* Custom Legend */}
