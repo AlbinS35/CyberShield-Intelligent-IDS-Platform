@@ -379,9 +379,21 @@ export default function ComplianceReports() {
               </div>
             </div>
           ) : (
-            <div className="glass-card p-12 text-center text-gray-600">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">Select a compliance report or generate a new live snapshot to begin review.</p>
+            <div className="glass-card p-12 text-center text-gray-500 space-y-4">
+              <FileText className="w-12 h-12 mx-auto mb-1 opacity-20 text-cyber-cyan" />
+              <div>
+                <h3 className="text-sm font-semibold text-gray-300">No Compliance Reports Available</h3>
+                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                  Audit snapshots summarize live network telemetry, SHA-256 seal integrity, and active incident response playbooks for regulatory review.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowGenerateModal(true)}
+                className="btn-primary text-xs inline-flex items-center gap-2 mx-auto"
+              >
+                <Plus className="w-4 h-4" />
+                Generate Audit Snapshot
+              </button>
             </div>
           )}
         </div>

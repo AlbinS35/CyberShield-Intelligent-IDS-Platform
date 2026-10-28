@@ -187,6 +187,65 @@ def create_seed_data() -> None:
             
         print(f"  User: {email} [{role}] ({'created' if created else 'exists'})")
 
+    # Seed initial compliance reports for the demo tenant
+    try:
+        from detection.models import ComplianceReport
+        if not ComplianceReport.objects.filter(tenant=tenant).exists():
+            manager_user = User.objects.filter(tenant=tenant, role=User.Role.ORG_MANAGER).first()
+            sample_metrics = {
+                "total_events": 806,
+                "threat_events": 45,
+                "verified_hashes": 806,
+                "active_playbooks": 3,
+            }
+            reports_to_create = [
+                {
+                    "title": "Q3 2026 ISO/IEC 27001:2022 Continuous Security Audit",
+                    "report_type": "ISO_27001",
+                    "status": "APPROVED",
+                    "auditor_notes": "All cryptographic checksums verified. Ingress perimeter monitoring fully active.",
+                    "findings": [
+                        {"code": "ISO/IEC 27001:2022 A.8.20", "name": "Network Security Controls & Logging", "status": "COMPLIANT", "details": "Continuous monitoring of network traffic is active. Recorded 806 events."},
+                        {"code": "ISO/IEC 27001:2022 A.8.16", "name": "Monitoring Activities & Anomaly Detection", "status": "COMPLIANT", "details": "Real-time AI/ML threat detection pipeline actively classifying network ingress vectors."},
+                        {"code": "ISO/IEC 27001:2022 A.8.24", "name": "Use of Cryptography", "status": "COMPLIANT", "details": "SHA-256 immutable checksum chains verified on 806 network logs."},
+                    ]
+                },
+                {
+                    "title": "PCI-DSS v4.0 Network Telemetry & Cryptographic Audit",
+                    "report_type": "PCI_DSS",
+                    "status": "REVIEWED",
+                    "auditor_notes": "Requirement 10 audit trails established with immutable SHA-256 ledger seals.",
+                    "findings": [
+                        {"code": "PCI-DSS v4.0 Req 10.2.1", "name": "Audit Trails for System & Cardholder Events", "status": "COMPLIANT", "details": "Logs secured using cryptographic SHA-256 hashes. Verified 806 audit seals."},
+                        {"code": "PCI-DSS v4.0 Req 11.4.1", "name": "Intrusion Detection & Threat Mitigation", "status": "COMPLIANT", "details": "Automated response playbooks configured (3 active) for real-time containment."},
+                    ]
+                },
+                {
+                    "title": "RBI Banking Cybersecurity Compliance & Incident Assessment",
+                    "report_type": "RBI_BANKING",
+                    "status": "APPROVED",
+                    "auditor_notes": "Continuous SOC monitoring in compliance with Reserve Bank of India Cyber Security Framework CC-5.1.",
+                    "findings": [
+                        {"code": "RBI Banking Security CC-5.1", "name": "Incident Containment & Action Logs", "status": "COMPLIANT", "details": "Telemetry surveillance active across all tenant subnets. 45 threat classifications tracked."},
+                        {"code": "RBI Banking Security CC-6.3", "name": "Boundary Defense & Automated Playbooks", "status": "COMPLIANT", "details": "3 automated incident mitigation playbooks ready for rapid isolation."},
+                    ]
+                }
+            ]
+            for rep in reports_to_create:
+                ComplianceReport.objects.create(
+                    tenant=tenant,
+                    title=rep["title"],
+                    report_type=rep["report_type"],
+                    status=rep["status"],
+                    generated_by=manager_user,
+                    metrics=sample_metrics,
+                    findings=rep["findings"],
+                    auditor_notes=rep["auditor_notes"],
+                )
+            print("  Compliance reports created.")
+    except Exception as e:
+        print(f"  [WARN] Failed to seed compliance reports: {e}")
+
     print("\n[OK] Seed data created.")
     print("   Login at POST /api/auth/login/ with any of the above emails")
     print("   and password: CyberShield@2024")
