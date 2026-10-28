@@ -175,7 +175,7 @@ export default function AnalystDashboard() {
     threats: Math.floor(Math.random() * 80 + 10),
   }))
 
-  const totalAlerts   = allAlerts.length
+  const totalAlerts   = alertsData?.count ?? allAlerts.length
   const criticalCount = allAlerts.filter(a => a.severity === 'CRITICAL').length
   const newCount      = allAlerts.filter(a => a.status === 'NEW').length
   const resolvedCount = allAlerts.filter(a => a.status === 'RESOLVED').length

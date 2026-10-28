@@ -20,22 +20,22 @@ export default function SecurityMetrics() {
   })
 
   // Fetch alerts
-  const { data: alertsData, isLoading: alertsLoading } = useQuery({
+  const { data: alertsRes, isLoading: alertsLoading } = useQuery({
     queryKey: ['alerts-metrics'],
-    queryFn: () => alertsAPI.list({ page_size: 100 }).then(r => r.data?.results || r.data || []),
+    queryFn: () => alertsAPI.list({ page_size: 100 }).then(r => r.data),
   })
 
   // Fetch network events
-  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+  const { data: eventsRes, isLoading: eventsLoading } = useQuery({
     queryKey: ['events-metrics'],
-    queryFn: () => networkEventsAPI.list({ page_size: 100 }).then(r => r.data?.results || r.data || []),
+    queryFn: () => networkEventsAPI.list({ page_size: 100 }).then(r => r.data),
   })
 
-  const alerts = Array.isArray(alertsData) ? alertsData : []
-  const events = Array.isArray(eventsData) ? eventsData : []
+  const alerts = alertsRes?.results || (Array.isArray(alertsRes) ? alertsRes : [])
+  const events = eventsRes?.results || (Array.isArray(eventsRes) ? eventsRes : [])
 
   // Metric aggregates
-  const totalAlerts = alerts.length
+  const totalAlerts = alertsRes?.count ?? alerts.length
   const criticalAlerts = alerts.filter(a => a.severity === 'CRITICAL' || a.severity === 'HIGH').length
   const normalEventsCount = events.filter(e => !e.is_threat).length
   const threatEventsCount = events.filter(e => e.is_threat).length
