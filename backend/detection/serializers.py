@@ -121,7 +121,7 @@ class ComplianceReportSerializer(serializers.ModelSerializer):
             "id", "title", "report_type", "status", "generated_by",
             "generated_by_name", "created_at", "metrics", "findings", "auditor_notes"
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "metrics", "findings", "generated_by"]
 
     def get_generated_by_name(self, obj):
         return obj.generated_by.get_full_name() if obj.generated_by else "System"

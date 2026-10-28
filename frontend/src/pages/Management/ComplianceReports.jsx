@@ -55,8 +55,10 @@ export default function ComplianceReports() {
       setShowGenerateModal(false)
       setReportTitle('')
     },
-    onError: () => {
-      toast.error('Failed to generate compliance report.')
+    onError: (err) => {
+      const data = err.response?.data
+      const detail = data?.detail || (typeof data === 'object' ? Object.entries(data).map(([k, v]) => `${k}: ${v}`).join('; ') : null)
+      toast.error(detail || 'Failed to generate compliance report.')
     }
   })
 

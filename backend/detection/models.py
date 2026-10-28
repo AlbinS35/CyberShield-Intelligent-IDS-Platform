@@ -248,8 +248,8 @@ class ComplianceReport(models.Model):
     status = models.CharField(max_length=20, default="DRAFT")  # DRAFT, REVIEWED, APPROVED
     generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    metrics = models.JSONField(help_text="Snapshot of metrics at generation time")
-    findings = models.JSONField(help_text="Compliance mapping items state")
+    metrics = models.JSONField(default=dict, blank=True, help_text="Snapshot of metrics at generation time")
+    findings = models.JSONField(default=list, blank=True, help_text="Compliance mapping items state")
     auditor_notes = models.TextField(blank=True)
 
     class Meta:
