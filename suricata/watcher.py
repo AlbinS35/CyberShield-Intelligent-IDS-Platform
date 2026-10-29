@@ -40,23 +40,55 @@ logging.basicConfig(
 logger = logging.getLogger("suricata-watcher")
 
 # ── Configuration from environment ───────────────────────────────────────────
-# Primary names match .env.example / docker-compose; backwards-compat aliases
-# (CYBERSHIELD_API_TOKEN / CYBERSHIELD_TENANT_ID) are checked as fallbacks.
-API_URL       = os.environ.get("CYBERSHIELD_API_URL",    "https://cybershield-backend.onrender.com")
+API_URL       = os.environ.get("CYBERSHIELD_API_URL",    "https://cybershield-backend-15ro.onrender.com")
 API_TOKEN     = (
     os.environ.get("SURICATA_API_TOKEN")
     or os.environ.get("CYBERSHIELD_API_TOKEN", "")
 )
 TENANT_ID     = (
     os.environ.get("DEFAULT_TENANT_ID")
-    or os.environ.get("CYBERSHIELD_TENANT_ID", "")
+    or os.environ.get("CYBERSHIELD_TENANT_ID", "75ca1ae8-bd9c-43d1-a016-7b8d8047e073")
 )
+AUTH_USER     = os.environ.get("CYBERSHIELD_USER",     "admin@cybershield.demo")
+AUTH_PASSWORD = os.environ.get("CYBERSHIELD_PASSWORD", "CyberShield@2024")
 EVE_LOG_PATH  = os.environ.get("EVE_LOG_PATH",           "/var/log/suricata/eve.json")
 BATCH_SIZE    = int(os.environ.get("BATCH_SIZE",          "20"))
 POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL_S",   "1.0"))
 EVENT_TYPES   = set(os.environ.get("EVENT_TYPES",         "alert").split(","))
 
 INGEST_URL = f"{API_URL.rstrip('/')}/api/ingestion/suricata/"
+LOGIN_URL  = f"{API_URL.rstrip('/')}/api/auth/login/"
+
+
+def authenticate(session: requests.Session) -> bool:
+    """Attempt to acquire a fresh JWT access token using service credentials."""
+    global API_TOKEN, TENANT_ID
+    logger.info(f"Authenticating with CyberShield backend as {AUTH_USER} …")
+    try:
+        resp = session.post(
+            LOGIN_URL,
+            json={"email": AUTH_USER, "password": AUTH_PASSWORD},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            API_TOKEN = data.get("access")
+            session.headers.update({"Authorization": f"Bearer {API_TOKEN}"})
+            
+            # Auto-discover active tenant ID if not hardcoded
+            user_data = data.get("user", {})
+            discovered_tenant = user_data.get("tenant", {}).get("id")
+            if discovered_tenant:
+                TENANT_ID = str(discovered_tenant)
+            
+            logger.info(f"Authentication successful! Token acquired (Tenant: {TENANT_ID}).")
+            return True
+        else:
+            logger.error(f"Authentication failed ({resp.status_code}): {resp.text[:200]}")
+            return False
+    except Exception as exc:
+        logger.error(f"Authentication request exception: {exc}")
+        return False
 
 
 def wait_for_file(path: str, timeout_s: int = 120) -> None:
@@ -77,17 +109,20 @@ def wait_for_file(path: str, timeout_s: int = 120) -> None:
 def make_session() -> requests.Session:
     """Build an authenticated requests Session."""
     session = requests.Session()
+    session.headers.update({"Content-Type": "application/json"})
     if API_TOKEN:
         session.headers.update({"Authorization": f"Bearer {API_TOKEN}"})
-    session.headers.update({"Content-Type": "application/json"})
+    else:
+        authenticate(session)
     return session
 
 
 def post_batch(session: requests.Session, batch: list) -> bool:
     """
     POST a batch of EVE events to the CyberShield ingestion API.
-    Returns True if accepted (2xx), False otherwise.
+    Returns True if accepted (2xx), False otherwise. Auto-reauthenticates on 401.
     """
+    global TENANT_ID
     payload = {
         "tenant_id": TENANT_ID,
         "events":    batch,
@@ -95,8 +130,19 @@ def post_batch(session: requests.Session, batch: list) -> bool:
     try:
         resp = session.post(INGEST_URL, json=payload, timeout=10)
         if resp.status_code in (200, 201, 202):
-            logger.debug(f"Batch of {len(batch)} events accepted.")
+            logger.info(f"Successfully ingested {len(batch)} Suricata alert event(s) into CyberShield.")
             return True
+        elif resp.status_code == 401:
+            logger.warning("Received 401 Unauthorized — refreshing token and retrying batch …")
+            if authenticate(session):
+                # Update payload in case tenant_id was refreshed
+                payload["tenant_id"] = TENANT_ID
+                retry_resp = session.post(INGEST_URL, json=payload, timeout=10)
+                if retry_resp.status_code in (200, 201, 202):
+                    logger.info(f"Retry successful: ingested {len(batch)} Suricata events.")
+                    return True
+                logger.error(f"Retry after re-auth failed: {retry_resp.status_code} — {retry_resp.text[:200]}")
+            return False
         else:
             logger.warning(
                 f"API rejected batch: {resp.status_code} — {resp.text[:200]}"
