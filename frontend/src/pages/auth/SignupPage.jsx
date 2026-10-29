@@ -6,7 +6,7 @@ import { authAPI } from '../../api'
 import {
   Shield, Fingerprint, SlidersHorizontal, BarChart3,
   Eye, EyeOff, Mail, Lock, Phone, User, Building2,
-  CheckCircle2, AlertTriangle, Briefcase, KeyRound, Info
+  CheckCircle2, AlertTriangle, Briefcase, KeyRound, Info, ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -424,13 +424,46 @@ export default function SignupPage() {
           {/* Ambient orb */}
           <div className="su-orb" style={{ position: 'absolute', bottom: '20%', left: '10%', width: 260, height: 260, background: 'radial-gradient(circle, rgba(0,230,118,0.07) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-          {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-            <div style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', borderRadius: 8, padding: 7 }}>
-              <Shield size={20} style={{ color: '#00F5FF' }} />
-            </div>
-            <span style={{ fontSize: 20, fontWeight: 800 }} className="su-gradient-text">CyberShield</span>
-          </Link>
+          {/* Logo & Back to Home */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 12 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)', borderRadius: 8, padding: 7 }}>
+                <Shield size={20} style={{ color: '#00F5FF' }} />
+              </div>
+              <span style={{ fontSize: 20, fontWeight: 800 }} className="su-gradient-text">CyberShield</span>
+            </Link>
+
+            <Link
+              to="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'rgba(220, 228, 228, 0.7)',
+                fontSize: 12,
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = '#00F5FF'
+                e.currentTarget.style.borderColor = 'rgba(0, 245, 255, 0.35)'
+                e.currentTarget.style.background = 'rgba(0, 245, 255, 0.08)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(220, 228, 228, 0.7)'
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'
+              }}
+            >
+              <ArrowLeft size={13} />
+              Back to Home
+            </Link>
+          </div>
 
           <div style={{ position: 'relative' }}>
             <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 10 }}>
@@ -496,8 +529,41 @@ export default function SignupPage() {
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '48px 40px', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 520 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '48px 40px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+          <Link
+            to="/"
+            style={{
+              position: 'absolute',
+              top: 24,
+              right: 28,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'rgba(220, 228, 228, 0.7)',
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = '#00F5FF'
+              e.currentTarget.style.borderColor = 'rgba(0, 245, 255, 0.35)'
+              e.currentTarget.style.background = 'rgba(0, 245, 255, 0.08)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'rgba(220, 228, 228, 0.7)'
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'
+            }}
+          >
+            <ArrowLeft size={13} />
+            Back to Home
+          </Link>
+          <div style={{ width: '100%', maxWidth: 520, marginTop: 12 }}>
 
             {/* Tab Switcher */}
             <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 4, marginBottom: 24 }}>

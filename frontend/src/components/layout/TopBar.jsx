@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Wifi, WifiOff, X, AlertTriangle, Shield, Clock, ArrowLeft, Home } from 'lucide-react'
+import { Bell, Wifi, WifiOff, X, AlertTriangle, Shield, Clock, ArrowLeft, Home, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { alertsAPI } from '../../api'
@@ -23,7 +23,7 @@ function useRealTimeClock() {
   return now
 }
 
-export default function TopBar({ isConnected }) {
+export default function TopBar({ isConnected, onReconnect }) {
   const { user } = useAuth()
   const now = useRealTimeClock()
   const [notifOpen, setNotifOpen] = useState(false)
@@ -144,8 +144,21 @@ export default function TopBar({ isConnected }) {
                   }
                 </p>
                 {!isConnected && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-400">
-                    💡 Run: <span className="font-mono">python manage.py runserver</span> to restore the connection
+                  <div className="space-y-2.5 pt-1">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 text-[11px] text-amber-400 leading-snug">
+                      Live event socket disconnected. Auto-reconnecting in background...
+                    </div>
+                    {onReconnect && (
+                      <button
+                        onClick={() => {
+                          onReconnect()
+                          setOfflineOpen(false)
+                        }}
+                        className="w-full py-1.5 px-3 rounded-lg bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan/25 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Reconnect Stream Now
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

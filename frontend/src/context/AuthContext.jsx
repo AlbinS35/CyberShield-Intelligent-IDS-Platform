@@ -22,6 +22,15 @@ export function AuthProvider({ children }) {
           tenantName:  data.tenant?.name,
           fullName:    data.full_name,
         })
+        // Ensure fresh JWT in localStorage for WebSocket connection
+        try {
+          const refreshRes = await authAPI.refresh()
+          if (refreshRes.data?.access) {
+            setTokens(refreshRes.data.access, refreshRes.data.refresh)
+          }
+        } catch {
+          // Non-blocking cookie fallback
+        }
       } catch (err) {
         setUser(null)
       } finally {

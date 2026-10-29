@@ -45,7 +45,7 @@ export default function AlertDetail() {
   const { data: shapData, isLoading: shapLoading } = useQuery({
     queryKey: ['alert-explanation', id],
     queryFn: () => axios.get(`/detection/alerts/${id}/explain/`).then(r => r.data),
-    enabled: !!id && alert?.status !== 'RESOLVED',
+    enabled: !!id,
     retry: 2,
     retryDelay: 3000
   })

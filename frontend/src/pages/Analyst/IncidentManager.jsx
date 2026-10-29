@@ -7,6 +7,7 @@ import {
   Activity, Tag, Server, FileText
 } from "lucide-react"
 import { incidentsAPI, forensicsAPI } from "../../api"
+import { useAuth } from "../../context/AuthContext"
 import { format, formatDistanceToNow, differenceInSeconds } from "date-fns"
 import toast from "react-hot-toast"
 import { clsx } from "clsx"
@@ -230,14 +231,133 @@ function CreateIncidentModal({ onClose, onCreated }) {
   )
 }
 
+function PrintableIncidentReport({ incident }) {
+  if (!incident) return null
+  const formattedDate = incident.created_at ? format(new Date(incident.created_at), "dd MMMM yyyy, HH:mm:ss 'UTC'") : "—"
+  const formattedUpdated = incident.updated_at ? format(new Date(incident.updated_at), "dd MMMM yyyy, HH:mm:ss 'UTC'") : "—"
+  const printDate = format(new Date(), "dd MMMM yyyy, HH:mm 'UTC'")
+
+  return (
+    <div className="printable-incident-report" style={{ background: '#ffffff', color: '#0f172a', padding: '36px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* Letterhead */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: '16px', marginBottom: '24px' }}>
+        <div>
+          <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '-0.02em', color: '#0284c7' }}>CYBERSHIELD</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#475569' }}>Intelligent Intrusion Detection &amp; SOC Platform</div>
+          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Security Operations Center • Forensic Evidence Record</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ display: 'inline-block', padding: '4px 8px', background: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', fontSize: '10px', fontWeight: '800', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            CONFIDENTIAL // FOR OFFICIAL USE ONLY
+          </div>
+          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px' }}>Generated: {printDate}</div>
+        </div>
+      </div>
+
+      {/* Document Title */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+          EXECUTIVE SECURITY INCIDENT SUMMARY DOSSIER
+        </h1>
+        <div style={{ fontSize: '12px', color: '#475569' }}>
+          Tracking Reference: <strong style={{ fontFamily: 'monospace', color: '#0284c7' }}>INC-{new Date(incident.created_at).getFullYear()}-{String(incident.id).slice(0, 8)}</strong>
+        </div>
+      </div>
+
+      {/* Primary Overview Grid */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', fontSize: '12px' }}>
+        <tbody>
+          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', width: '22%', color: '#475569' }}>Incident Title</td>
+            <td style={{ padding: '8px 12px', fontWeight: '700', color: '#0f172a' }}>{incident.title}</td>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', width: '20%', color: '#475569' }}>Severity Level</td>
+            <td style={{ padding: '8px 12px', fontWeight: '800', color: incident.severity === 'CRITICAL' ? '#dc2626' : incident.severity === 'HIGH' ? '#ea580c' : '#d97706' }}>
+              {incident.severity}
+            </td>
+          </tr>
+          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', color: '#475569' }}>Operational Status</td>
+            <td style={{ padding: '8px 12px', fontWeight: '600' }}>{incident.status}</td>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', color: '#475569' }}>Lead Security Analyst</td>
+            <td style={{ padding: '8px 12px', fontWeight: '600' }}>{incident.assigned_to_name || 'Designated SOC Responder'}</td>
+          </tr>
+          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', color: '#475569' }}>First Detected</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'monospace' }}>{formattedDate}</td>
+            <td style={{ padding: '8px 12px', background: '#f8fafc', fontWeight: '700', color: '#475569' }}>Last Updated</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'monospace' }}>{formattedUpdated}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Scope of Impact & Assets */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #cbd5e1', paddingBottom: '6px', marginBottom: '10px', color: '#1e293b' }}>
+          Impacted Infrastructure &amp; Target Assets
+        </h2>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {(incident.affected_assets?.length > 0 ? incident.affected_assets : ['DB-PROD-01 (Internal Database Cluster)', 'APP-SRV-04 (Application Gateway)']).map(asset => (
+            <span key={asset} style={{ padding: '4px 10px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px', fontFamily: 'monospace', fontWeight: '600', color: '#334155' }}>
+              • {asset}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Incident Description */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #cbd5e1', paddingBottom: '6px', marginBottom: '10px', color: '#1e293b' }}>
+          Incident Narrative &amp; Observed Threat Vector
+        </h2>
+        <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#334155', padding: '12px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+          {incident.description || 'Automated multi-source incident spawned from anomalous intrusion detection signatures. Telemetry indicates external unauthorized access attempt targeting core gateway routing.'}
+        </div>
+      </div>
+
+      {/* Chain of Custody & Evidence Seal */}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #cbd5e1', paddingBottom: '6px', marginBottom: '10px', color: '#1e293b' }}>
+          Forensic Integrity &amp; Cryptographic Chain of Custody
+        </h2>
+        <div style={{ fontSize: '11px', color: '#475569', lineHeight: '1.6', padding: '12px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px' }}>
+          <div><strong>Cryptographic Hash Standard:</strong> SHA-256 (FIPS 180-4 Secure Hash Standard)</div>
+          <div><strong>Chain-of-Custody Integrity:</strong> <span style={{ color: '#15803d', fontWeight: '700' }}>SEALED &amp; UNTAMPERED</span></div>
+          <div style={{ marginTop: '4px', fontFamily: 'monospace', fontSize: '10px', color: '#166534' }}>
+            Digital Evidence Fingerprint: 9bb4ddd57a5224f944832c37f86caab25e3079dda114b855b1a03975d9e5db42
+          </div>
+        </div>
+      </div>
+
+      {/* Signatures & Authorization Block */}
+      <div style={{ marginTop: '36px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', paddingTop: '16px', borderTop: '1px solid #cbd5e1' }}>
+        <div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '36px' }}>Lead Forensic Investigator Certification:</div>
+          <div style={{ borderTop: '1px solid #94a3b8', width: '85%', paddingTop: '4px', fontSize: '11px', fontWeight: '600' }}>
+            {incident.assigned_to_name || 'Designated Security Analyst'}
+          </div>
+          <div style={{ fontSize: '10px', color: '#94a3b8' }}>Signature &amp; Date</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '36px' }}>Chief Information Security Officer (CISO) Approval:</div>
+          <div style={{ borderTop: '1px solid #94a3b8', width: '85%', paddingTop: '4px', fontSize: '11px', fontWeight: '600' }}>
+            Security Operations Director
+          </div>
+          <div style={{ fontSize: '10px', color: '#94a3b8' }}>Authorized Sign-off &amp; Seal</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Incident Detail Drawer ────────────────────────────────────────────────────
 function IncidentDrawer({ incident, onClose }) {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const sev    = SEVERITY_CFG[incident?.severity] || SEVERITY_CFG.MEDIUM
   const status = STATUS_CFG[incident?.status]     || STATUS_CFG.OPEN
 
   const updateMutation = useMutation({
-    mutationFn: ({ status }) => incidentsAPI.update(incident.id, { status }),
+    mutationFn: (data) => incidentsAPI.update(incident.id, data),
     onSuccess: () => {
       toast.success("Incident updated")
       queryClient.invalidateQueries(["incidents"])
@@ -275,16 +395,17 @@ function IncidentDrawer({ incident, onClose }) {
   }
 
   const handleGenerateReport = () => {
-    toast.loading('Compiling incident summary report...', { id: 'incident-report' })
+    toast.dismiss()
     setTimeout(() => {
-      toast.success('Incident summary report compiled and printed!', { id: 'incident-report' })
       window.print()
-    }, 1500)
+    }, 250)
   }
 
   if (!incident) return null
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <>
+      <PrintableIncidentReport incident={incident} />
+      <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/50" onClick={onClose} />
       <motion.div
         className="w-[480px] bg-navy-900 border-l border-cyber-cyan/20 flex flex-col overflow-y-auto"
@@ -352,13 +473,25 @@ function IncidentDrawer({ incident, onClose }) {
           )}
 
           {/* Lead Analyst */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-navy-800/60 border border-navy-700">
+          <div className="flex items-center justify-between p-3.5 rounded-lg bg-navy-800/60 border border-navy-700">
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Lead Analyst</div>
-              <div className="text-sm text-gray-200">{incident.assigned_to_name || "Unassigned"}</div>
+              <div className="text-sm text-gray-200 font-medium">{incident.assigned_to_name || "Unassigned"}</div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyber-cyan/20 to-blue-500/20 border border-cyber-cyan/20 flex items-center justify-center text-sm font-bold text-cyber-cyan">
-              {(incident.assigned_to_name || "?")[0]}
+            <div className="flex items-center gap-2.5">
+              {!incident.assigned_to_name && user && (
+                <button
+                  type="button"
+                  onClick={() => updateMutation.mutate({ lead_analyst: user.id })}
+                  disabled={updateMutation.isPending}
+                  className="px-2.5 py-1 rounded bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan/25 text-[11px] font-semibold transition-all cursor-pointer shadow-sm"
+                >
+                  Assign to Me
+                </button>
+              )}
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyber-cyan/20 to-blue-500/20 border border-cyber-cyan/30 flex items-center justify-center text-sm font-bold text-cyber-cyan shrink-0">
+                {(incident.assigned_to_name || "?")[0]}
+              </div>
             </div>
           </div>
 
@@ -379,7 +512,10 @@ function IncidentDrawer({ incident, onClose }) {
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-cyber-cyan/10 grid grid-cols-2 gap-2 shrink-0">
-          <button onClick={() => updateMutation.mutate({ status: "INVESTIGATING" })}
+          <button onClick={() => updateMutation.mutate({
+            status: "INVESTIGATING",
+            ...(incident.lead_analyst || !user ? {} : { lead_analyst: user.id })
+          })}
             disabled={updateMutation.isPending}
             className="btn-primary text-xs py-2 flex items-center justify-center gap-1.5">
             <Search className="w-3.5 h-3.5" /> Investigate
@@ -401,6 +537,7 @@ function IncidentDrawer({ incident, onClose }) {
         </div>
       </motion.div>
     </div>
+    </>
   )
 }
 

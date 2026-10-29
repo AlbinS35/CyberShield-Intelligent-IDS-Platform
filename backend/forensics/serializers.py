@@ -66,16 +66,60 @@ class EvidenceUploadSerializer(serializers.ModelSerializer):
 
 class CaseTimelineSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source="get_category_display", read_only=True)
+    event_type = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
+    actor_name = serializers.SerializerMethodField()
+    ip_address = serializers.CharField(source="source_ip", read_only=True)
+    hash = serializers.SerializerMethodField()
+    evidence_file = serializers.SerializerMethodField()
 
     class Meta:
         model = CaseTimeline
         fields = [
-            "id", "case", "category", "category_display", "title", "description",
-            "source_ip", "target_ip", "source_system",
-            "network_event", "evidence", "event_time",
-            "recorded_by", "recorded_at",
+            "id", "case", "category", "category_display", "event_type", "title", "description",
+            "source_ip", "target_ip", "ip_address", "source_system",
+            "network_event", "evidence", "evidence_file", "hash", "event_time", "created_at",
+            "recorded_by", "actor_name", "recorded_at",
         ]
         read_only_fields = ["id", "recorded_at"]
+
+    def get_event_type(self, obj):
+        title_lower = (obj.title or "").lower()
+        if "escalat" in title_lower:
+            return "ALERT_ESCALATED"
+        if "opened" in title_lower:
+            return "CASE_OPENED"
+        if "sealed" in title_lower or "hash" in title_lower:
+            return "LOG_SEALED"
+        if "block" in title_lower:
+            return "IP_BLOCKED"
+        if "playbook" in title_lower:
+            return "PLAYBOOK_FIRED"
+        if obj.evidence:
+            return "EVIDENCE_UPLOADED"
+        return obj.category or "OTHER"
+
+    def get_created_at(self, obj):
+        dt = obj.event_time or obj.recorded_at
+        return dt.isoformat() if dt else None
+
+    def get_actor_name(self, obj):
+        if obj.recorded_by:
+            name = obj.recorded_by.get_full_name()
+            return name if name else (obj.recorded_by.username or obj.recorded_by.email)
+        return obj.source_system or "CyberShield Platform"
+
+    def get_hash(self, obj):
+        if obj.evidence and obj.evidence.sha256_hash:
+            return obj.evidence.sha256_hash
+        if obj.network_event and obj.network_event.log_hash:
+            return obj.network_event.log_hash
+        return None
+
+    def get_evidence_file(self, obj):
+        if obj.evidence:
+            return obj.evidence.file_name
+        return None
 
 
 class ChainOfCustodySerializer(serializers.ModelSerializer):

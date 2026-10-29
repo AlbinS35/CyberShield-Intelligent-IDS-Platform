@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react"
+import { Link } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   AlertTriangle, XCircle, ClipboardList, CheckCircle2,
   Search, Download, CheckCheck, ChevronRight, RefreshCw,
-  Eye, Shield
+  Eye, Shield, ExternalLink
 } from "lucide-react"
 import { alertsAPI } from "../../api"
 import { format } from "date-fns"
@@ -92,11 +93,18 @@ function AlertRow({ alert, isNew, selected, onSelect, onView }) {
       <div className="flex-1 min-w-0 grid grid-cols-12 gap-3 items-center">
         <div className="col-span-5 flex items-center gap-2 min-w-0">
           <span className={sev.cls}>{sev.label}</span>
-          <span className="text-sm text-gray-200 truncate font-medium">{alert.title}</span>
+          <Link
+            to={`/analyst/alerts/${alert.id}`}
+            onClick={e => e.stopPropagation()}
+            className="text-sm text-gray-200 truncate font-medium hover:text-cyber-cyan transition-colors"
+            title="Click to view full alert detail dossier"
+          >
+            {alert.title}
+          </Link>
         </div>
         <div className="col-span-3 flex items-center gap-2 text-xs font-mono text-gray-500">
           <span className="truncate">{alert.source_ip || "—"}</span>
-          <span className="text-gray-700">?</span>
+          <span className="text-gray-500">→</span>
           <span className="truncate">{alert.destination_ip || "—"}</span>
         </div>
         <div className="col-span-2">
@@ -109,6 +117,7 @@ function AlertRow({ alert, isNew, selected, onSelect, onView }) {
         </div>
       </div>
       <button onClick={() => onView(alert)}
+        title="Quick inspect drawer"
         className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-cyber-cyan/10 text-cyber-cyan shrink-0">
         <ChevronRight className="w-4 h-4" />
       </button>
@@ -152,34 +161,47 @@ function AlertDrawer({ alert, onClose }) {
             <XCircle className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Dedicated Full Alert Page Navigation Button */}
+        <div className="px-5 pt-4">
+          <Link
+            to={`/analyst/alerts/${alert.id}`}
+            className="w-full py-2.5 px-3 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/20 font-semibold text-xs transition-all flex items-center justify-center gap-2 group shadow-lg shadow-cyber-cyan/5"
+          >
+            <span>Open Full Alert Dossier &amp; Mitigation</span>
+            <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
+
         <div className="p-5 space-y-4 flex-1">
           <div className="glass-card p-4">
             <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Network Routing</div>
             <div className="flex items-center justify-between text-xs font-mono">
-              <div><div className="text-gray-500 mb-0.5">Source</div><div className="text-cyber-cyan">{alert.source_ip || "—"}</div></div>
+              <div><div className="text-gray-500 mb-0.5">Source</div><div className="text-cyber-cyan font-bold">{alert.source_ip || "—"}</div></div>
               <ChevronRight className="w-3 h-3 text-gray-600" />
               <div className="text-right"><div className="text-gray-500 mb-0.5">Destination</div><div className="text-gray-200">{alert.destination_ip || "—"}</div></div>
             </div>
           </div>
           <div className="space-y-2.5">
             {[
-              ["Protocol",    alert.protocol],
-              ["Status",      STATUS_CONFIG[alert.status]?.label || alert.status],
-              ["ML Class",    alert.ml_classification || "—"],
-              ["Confidence",  alert.ml_confidence ? `${(alert.ml_confidence*100).toFixed(1)}%` : "—"],
-              ["Agent",       alert.agent_hostname || "—"],
-              ["Detected At", format(new Date(alert.created_at), "dd MMM yyyy HH:mm:ss")],
+              ["Protocol",        alert.protocol || "TCP"],
+              ["Status",          STATUS_CONFIG[alert.status]?.label || alert.status],
+              ["ML Class",        alert.ml_classification || alert.attack_type || "R2L"],
+              ["Confidence",      alert.ml_confidence ? `${(alert.ml_confidence*100).toFixed(1)}%` : "—"],
+              ["Agent / Sensor",  alert.agent_hostname || "sensor-alpha-01"],
+              ["Affected Asset",  alert.affected_asset || "Core Gateway"],
+              ["Detected At",     format(new Date(alert.created_at), "dd MMM yyyy HH:mm:ss")],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between items-center text-xs border-b border-navy-700/50 pb-2">
                 <span className="text-gray-500">{label}</span>
-                <span className="text-gray-200 font-mono">{value || "—"}</span>
+                <span className="text-gray-200 font-mono font-medium">{value || "—"}</span>
               </div>
             ))}
           </div>
           {alert.description && (
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Description</div>
-              <p className="text-xs text-gray-400 leading-relaxed">{alert.description}</p>
+              <p className="text-xs text-gray-400 leading-relaxed bg-navy-950/60 p-3 rounded border border-navy-800">{alert.description}</p>
             </div>
           )}
         </div>

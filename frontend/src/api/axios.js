@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { setTokens, getRefreshToken } from '../utils/tokenUtils'
 
 // Base Axios instance pointing to Django backend
 const api = axios.create({
@@ -40,7 +41,10 @@ api.interceptors.response.use(
 
       try {
         // Post a request to refresh — cookies are sent and new ones set automatically by backend
-        await axios.post('/api/auth/refresh/', {}, { withCredentials: true })
+        const res = await axios.post('/api/auth/refresh/', {}, { withCredentials: true })
+        if (res.data?.access) {
+          setTokens(res.data.access, res.data.refresh || getRefreshToken())
+        }
         processQueue(null)
         return api(originalRequest)
       } catch (refreshError) {

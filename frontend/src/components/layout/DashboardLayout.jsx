@@ -4,7 +4,7 @@ import TopBar from './TopBar'
 import { useSocket } from '../../context/SocketContext'
 
 export default function DashboardLayout() {
-  const { isConnected } = useSocket()
+  const { isConnected, reconnect } = useSocket()
 
   return (
     <div className="h-screen flex overflow-hidden bg-navy-900">
@@ -13,7 +13,7 @@ export default function DashboardLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar isConnected={isConnected} />
+        <TopBar isConnected={isConnected} onReconnect={reconnect} />
         <main className="flex-1 overflow-y-auto p-6 animate-fade-in">
           <Outlet />
         </main>
